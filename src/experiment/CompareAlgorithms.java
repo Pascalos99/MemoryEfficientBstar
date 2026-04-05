@@ -155,8 +155,7 @@ public class CompareAlgorithms {
 		
 		ExecutorService exec;
 		if (number_of_threads <= 0) {
-			writeln("Using virtual thread executor");
-			exec = Executors.newVirtualThreadPerTaskExecutor();
+			throw new RuntimeException("Has to contain at least 1 thread");
 		}
 		else {
 			writefln("Using fixed thread pool (%d)", number_of_threads);
@@ -744,17 +743,17 @@ public class CompareAlgorithms {
 	}
 	private static void waitForFlush() {
 		Instant now = Instant.now();
-		if (lastFlushTime == null || Duration.between(lastFlushTime, now).compareTo(in_between_records) > 0) {
+		if (lastFlushTime == null || Duration.between(lastFlushTime, now).toMillis() > in_between_records_ms) {
 			flush();
 			lastFlushTime = now;
 		} else {
 			awaitsFlush = true;
-			Thread.ofVirtual().start(() -> {
+			new Thread(() -> {
 				try {
-					Thread.sleep(in_between_records);
+					Thread.sleep(in_between_records_ms);
 					if (awaitsFlush) flush();
 				} catch (InterruptedException e) {}
-			});
+			}).start();
 		}
 	}
 	static void closeAllPrints() {
@@ -786,7 +785,7 @@ public class CompareAlgorithms {
 	}
 	private static Instant lastFlushTime = null;
 	private static boolean awaitsFlush = false;
-	private final static Duration in_between_records = Duration.ofSeconds(1);
+	private final static long in_between_records_ms = 1000;
 	synchronized static void recordProgress() {
 		num_completed++;
 		if ((num_completed+num_skipped) % (num_total / num_prints) == 0) {
@@ -819,7 +818,7 @@ public class CompareAlgorithms {
 	 * @param exec the thread pool executor being used for the experiments.
 	 */
 	public static void startExpansionRatePrinter(ExecutorService exec) {
-		Thread.startVirtualThread(() -> {
+		new Thread(() -> {
 			int last_print_len = 0;
 			while (!exec.isTerminated()) {
 				long last_total = BstarBasic.num_expanded_total;
@@ -842,7 +841,7 @@ public class CompareAlgorithms {
 				flush();
 				last_print_len = number.length();
 			}
-		});
+		}).start();
 	}
 	
 }

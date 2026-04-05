@@ -297,11 +297,11 @@ public class TextExplorer {
 		int sdepth = (int) current.depth();
 		ArrayList<GameTreeNode<?,?>> stack = new ArrayList<>();
 		HashSet<GameTreeNode<?,?>> visited = new HashSet<>();
-		stack.addLast(current);
+		stack.add(current);
 		visited.add(current);
 		
 		while (!stack.isEmpty()) {
-			var c = stack.removeLast();
+			var c = stack.remove(stack.size()-1);
 			if (c_index++ == index) return c;
 			var hasChildren = c.savedChildren();
 			if (hasChildren.isEmpty()) continue;
@@ -309,7 +309,7 @@ public class TextExplorer {
 			for (int i=children.size()-1; i >= 0; i--) {
 				var child = children.get(i);
 				if (child.depth() - sdepth <= depth && !visited.contains(child)) {
-					stack.addLast(child);
+					stack.add(child);
 					visited.add(child);
 				}
 			}

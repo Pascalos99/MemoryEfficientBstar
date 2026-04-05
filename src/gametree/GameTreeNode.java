@@ -303,9 +303,9 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 //		return 1 + children.get().stream().mapToLong(GameTreeNode::countSavedSubTree).sum();
 		long count = 0;
 		ArrayList<GameTreeNode<?,?>> stack = new ArrayList<>();
-		stack.addLast(this);
+		stack.add(this);
 		while (!stack.isEmpty()) {
-			var current = stack.removeLast();
+			var current = stack.remove(stack.size()-1);
 			count++;
 			
 			var children = current.savedChildren();
@@ -761,14 +761,14 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 		StringBuilder sb = new StringBuilder();
 		ArrayList<GameTreeNode<N,P>> stack = new ArrayList<>();
 		HashSet<GameTreeNode<N,P>> visited = new HashSet<>();
-		stack.addLast(this);
+		stack.add(this);
 		visited.add(this);
 		
 		Result<N,P> best2Opt = null, best2Pes = null;
 		boolean superbest = false;
 		
 		while (!stack.isEmpty()) {
-			var c = stack.removeLast();
+			var c = stack.remove(stack.size() - 1);
 			
 			var ancestors = new GameTreeNode<?,?>[(int)(double)(c.depth() - sdepth)];
 			int k = ancestors.length - 1;
@@ -824,7 +824,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 			for (int i=children.size()-1; i >= 0; i--) {
 				var child = children.get(i);
 				if (child.depth() - sdepth <= depth && !visited.contains(child)) {
-					stack.addLast(child);
+					stack.add(child);
 					visited.add(child);
 				}
 			}
