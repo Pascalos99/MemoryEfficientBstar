@@ -214,6 +214,9 @@ public interface SearchAlgorithm {
 		public N mostOptimisticNode() {
 			return mostOptimisticNodes().best();
 		}
+		/**
+		 * @return the index of the move returned by {@link #mostOptimisticNode()}
+		 */
 		public int mostOptimisticNodeIndex() {
 			return mostOptimisticNodes().bestindex();
 		}
@@ -226,6 +229,9 @@ public interface SearchAlgorithm {
 		public N leastPessimisticNode() {
 			return leastPessimisticNodes().best();
 		}
+		/**
+		 * @return the index of the move returned by {@link #leastPessimisticNode()}
+		 */
 		public int leastPessimisticNodeIndex() {
 			return leastPessimisticNodes().bestindex();
 		}
@@ -240,6 +246,9 @@ public interface SearchAlgorithm {
 		public P bestMove() {
 			return leastPessimisticNode().position();
 		}
+		/**
+		 * @return the index of the best move as returned by {@link #bestMove()}
+		 */
 		public int bestMoveIndex() {
 			return leastPessimisticNodeIndex();
 		}
@@ -249,6 +258,9 @@ public interface SearchAlgorithm {
 			return metrics[0];
 		}
 		
+		/**
+		 * @return A description of the results described by this object. Best used for printing or writing to a file read with a standard text editor.
+		 */
 		public String describe() {
 	    	StringBuilder sb = new StringBuilder();
 	    	sb.append(String.format("Result:\n\tseparation: %s\n\tmost optimistic: %d (%s)\n\tleast pessimistic: %d (%s)\n",
