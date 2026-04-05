@@ -1,0 +1,1 @@
+jshell --class-path ../bin jshellinit.jshell

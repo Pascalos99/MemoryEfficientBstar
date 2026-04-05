@@ -1,0 +1,243 @@
+import gametree.*;
+import algorithm.*;
+import visualizer.*;
+import algorithm.SearchAlgorithm.SearchResult;
+import experiment.TestDfBstar;
+import java.time.Duration;
+import java.time.Instant;
+
+ArtificialGamePosition newTree(long seed) {
+    System.out.println("seed = "+seed);
+    return new ArtificialGamePosition(true, seed, 5, 100, 5, 1.1, 0.25);
+}
+ArtificialGamePosition newTree() {
+    return newTree(new Random().nextLong());
+}
+VariantAGP newAGP(long seed) {
+	System.out.println("seed = "+seed);
+	return new VariantAGP(true, seed, 5, Generator.Width.FIXED, 100, Generator.MINRANGE(2, Generator.MAXDEPTH(2_000, Generator.DEFAULT(5))), 1.1, 0.25);
+}
+VariantAGP newAGP() {
+	return newAGP(new Random().nextLong());
+}
+
+void measure(Supplier<SearchResult<?,?>> search, boolean printTree) {
+    Instant A = Instant.now();
+    var res = search.get();
+    Instant B = Instant.now();
+    System.out.println("Time spent (ms): "+Duration.between(A,B).toNanos()/1_000_000.);
+    System.out.println(res.describe());
+	if (printTree) System.out.println(res.root().printTree(1));
+}
+void measure(Supplier<SearchResult<?,?>> search) {
+	measure(search, false);
+}
+void measure(int repetitions, Supplier<SearchResult<?,?>> search, Runnable computationPrep) {
+	long[] times = new long[repetitions];
+	long[] expands = new long[repetitions];
+	long[] evals = new long[repetitions];
+	long[] nodes = new long[repetitions];
+	boolean[] solved = new boolean[repetitions];
+	int num_solved = 0;
+	
+	for (int i=0; i < repetitions; i++) {
+		computationPrep.run();
+		// System.out.format("starting repetition %d out of %d\n",i+1,repetitions);
+		Instant A = Instant.now();
+		var res = search.get();
+		Instant B = Instant.now();
+		// System.out.println("  done.");
+		System.out.print(".");
+		if (i == repetitions - 1)
+			System.out.println();
+		times[i] = Duration.between(A,B).toNanos();
+		var M = res.mainMetrics();
+		expands[i] = M.expansions();
+		evals[i] = M.evaluations();
+		nodes[i] = M.maxObservedNodes();
+		solved[i] = res.complete();
+		if (solved[i]) num_solved++;
+	}
+	double mean_time, mean_expands, mean_evals, mean_nodes;
+	mean_time = mean_expands = mean_evals = mean_nodes = 0.;
+	for (int i=0; i < repetitions; i++) {
+		if (num_solved > 0 && solved[i]) {
+			mean_time    += (double) (times[i] / 1_000_000.) / num_solved;
+			mean_expands += (double) expands[i] / num_solved;
+			mean_evals   += (double) evals[i] / num_solved;
+			mean_nodes   += (double) nodes[i] / num_solved;
+		} else if (num_solved == 0) {
+			mean_time    += (double) (times[i] / 1_000_000.) / repetitions;
+			mean_expands += (double) expands[i] / repetitions;
+			mean_evals   += (double) evals[i] / repetitions;
+			mean_nodes   += (double) nodes[i] / repetitions;
+		}
+	}
+	System.out.format("Solved %d out of %d repetitions\n",num_solved,repetitions);
+	System.out.format("Average time spent (ms): %.1f\n",mean_time);
+	System.out.format("Average num expansions : %.0f\n",mean_expands);
+	System.out.format("Average num evaluations: %.0f\n",mean_evals);
+	System.out.format("Average maximum nodes  : %.0f\n",mean_nodes);
+}
+void measure(int repetitions, Supplier<SearchResult<?,?>> search) {
+	measure(repetitions, search, () -> {});
+}
+
+BstarBasic bstar(StrategyFunction sf) { return new BstarBasic(sf); }
+BstarBasic bstar() { return bstar(StrategyFunction.ALTERNATE()); }
+
+DfBstar dfbstar(StrategyFunction sf, double sigma, double epsilon,boolean debug) {
+	var alg = new DfBstar(sf,sigma,epsilon);
+	alg.DB.setDebug(debug);
+	return alg; }
+DfBstar dfbstar(double sigma, double epsilon, boolean debug) {
+	return dfbstar(StrategyFunction.ALTERNATE(), sigma, epsilon,debug); }
+DfBstar dfbstar(boolean debug) { return dfbstar(0.3,0.05,debug); }
+
+DfBstar dfbstar(StrategyFunction sf, double sigma, double epsilon) {
+	return dfbstar(sf,sigma,epsilon,false); }
+DfBstar dfbstar(double sigma, double epsilon) {
+	return dfbstar(StrategyFunction.ALTERNATE(), sigma, epsilon); }
+DfBstar dfbstar() { return dfbstar(0.3,0.05); }
+
+DfBstar2 dfbstar2(StrategyFunction sf, double sigma, double epsilon,boolean debug) {
+	var alg = new DfBstar2(sf,sigma,epsilon);
+	alg.DB.setDebug(debug);
+	return alg; }
+DfBstar2 dfbstar2(double sigma, double epsilon, boolean debug) {
+	return dfbstar2(StrategyFunction.ALTERNATE(), sigma, epsilon,debug); }
+DfBstar2 dfbstar2(boolean debug) { return dfbstar2(0.3,0.05,debug); }
+
+DfBstar2 dfbstar2(StrategyFunction sf, double sigma, double epsilon) {
+	return dfbstar2(sf,sigma,epsilon,false); }
+DfBstar2 dfbstar2(double sigma, double epsilon) {
+	return dfbstar2(StrategyFunction.ALTERNATE(), sigma, epsilon); }
+DfBstar2 dfbstar2() { return dfbstar2(0.3,0.05); }
+
+DfBstar3 dfbstar3(StrategyFunction sf, double sigma, double epsilon, double chance, boolean debug) {
+	var alg = new DfBstar3(sf,sigma,epsilon,chance);
+	alg.DB.setDebug(debug);
+	return alg; }
+DfBstar3 dfbstar3(double sigma, double epsilon, double chance, boolean debug) {
+	return dfbstar3(StrategyFunction.ALTERNATE(), sigma, epsilon, chance, debug); }
+DfBstar3 dfbstar3(boolean debug) { return dfbstar3(0.3,0.05,0.175,debug); }
+
+DfBstar3 dfbstar3(StrategyFunction sf, double sigma, double epsilon, double chance) {
+	return dfbstar3(sf,sigma,epsilon,chance,false); }
+DfBstar3 dfbstar3(double sigma, double epsilon, double chance) {
+	return dfbstar3(StrategyFunction.ALTERNATE(), sigma, epsilon, chance); }
+DfBstar3 dfbstar3() { return dfbstar3(0.3,0.05,0.175); }
+
+DfBstarDB dfbstarDB(StrategyFunction sf, double sigma, double epsilon, double chance, boolean debug) {
+	var alg = new DfBstarDB(sf,sigma,epsilon,chance);
+	alg.DB.setDebug(debug);
+	return alg; }
+DfBstarDB dfbstarDB(double sigma, double epsilon, double chance, boolean debug) {
+	return dfbstarDB(StrategyFunction.ALTERNATE(), sigma, epsilon, chance, debug); }
+DfBstarDB dfbstarDB(boolean debug) { return dfbstarDB(0.3,0.05,1,debug); }
+
+DfBstarDB dfbstarDB(StrategyFunction sf, double sigma, double epsilon, double chance) {
+	return dfbstarDB(sf,sigma,epsilon,chance,false); }
+DfBstarDB dfbstarDB(double sigma, double epsilon, double chance) {
+	return dfbstarDB(StrategyFunction.ALTERNATE(), sigma, epsilon, chance); }
+DfBstarDB dfbstarDB() { return dfbstarDB(0.3,0.05,1); }
+
+<P extends IGamePosition<P>> void testTree(P tree) {
+    measure(() -> bstar().search(tree, Duration.ofSeconds(3)));
+}
+
+void dumpTable(Table miniT) {
+    int num_empty = 0;
+    int num_total = 1 << miniT.keySize();
+    StringBuilder large = new StringBuilder();
+    StringBuilder small = new StringBuilder();
+    for (int i=0; i < num_total; i++) {
+      if (miniT.hasEntry(i)) {
+        String str = String.format("%3d: (% 3.0f,% 3.0f)\n",i,miniT.lower(i),miniT.upper(i));
+        small.append(str);
+        large.append(str);
+      } else {
+        String str = String.format("%3d: empty\n", i);
+        large.append(str);
+        num_empty++;
+      }
+    } double frac = (double) num_empty / num_total;
+    if (frac > 0.4)
+        System.out.println(small.toString());
+    else
+        System.out.println(large.toString());
+    System.out.format(Locale.CANADA, "in total %d out of %d entries are filled (%4.2f%%)\n",num_total-num_empty,num_total,100*(1.-frac));
+}
+void measureTable(Table TT) {
+	int num_filled = 0;
+    int num_total = 1 << TT.keySize();
+    for (int i=0; i < num_total; i++)
+      if (TT.hasEntry(i)) num_filled++;
+    System.out.format(Locale.CANADA, "in total %d out of %d entries are filled (%4.2f%%)\n",num_filled,num_total,100*((double)num_filled/num_total));
+}
+
+Supplier<ArtificialGamePosition> newTree(long difficulty, int reps, Duration time_limit) {
+    Random r = new Random();
+    int width = 2;
+    int num_alts = 2;
+    double growth = 1.;
+    double force_chance = 0.;
+    long expansions = 0l;
+    int solved = reps;
+    int step = 0;
+    while (expansions < difficulty*reps && solved > 0) {
+	if (step > 0) {
+	    int choice = r.nextInt((force_chance < 1)? 4 : 3);
+	    if (choice == 0) { width++; System.out.format("increased width (%d)\n", width); }
+	    if (choice == 1) { num_alts++; System.out.format("increased num-alts (%d)\n", num_alts); }
+	    if (choice == 2) { growth *= 1.1; System.out.format(Locale.CANADA, "increased growth (%.2f)\n", growth); }
+	    if (choice == 3) { force_chance += 0.1; System.out.format(Locale.CANADA, "increased force chance (%.1f)\n", force_chance); }
+	}
+	expansions = 0l;
+	solved = 0;
+	for (int iter=0; iter < reps; iter++) {
+	    var tree = new ArtificialGamePosition(true,r.nextLong(), width, 100, num_alts, growth, force_chance);
+	    var res = bstar().search(tree,time_limit);
+	    solved += res.complete() ? 1 : 0;
+	    expansions += res.mainMetrics().expansions();
+		System.out.print(".");
+	} System.out.println();
+	System.out.format(Locale.CANADA, "got %.2f%% of the # expansions goal (%d solved)\n",100. * (double)expansions / (difficulty * reps), solved);
+	step++;
+    }
+    final int _width = width, _num_alts = num_alts;
+    final double _growth = growth, _force_chance = force_chance;
+    return () -> new ArtificialGamePosition(true, r.nextLong(), _width, 100, _num_alts, _growth, _force_chance);
+}
+
+ArtificialGamePosition findCase(Supplier<ArtificialGamePosition> getter, Function<ArtificialGamePosition, Long> metricA, Function<ArtificialGamePosition, Long> metricB, int reps, Duration time_limit) {
+	// find a tree where metricB < metricA for every rep
+	Instant start = Instant.now();
+	findtree: while (Duration.between(start, Instant.now()).compareTo(time_limit) < 0) {
+		ArtificialGamePosition tree = getter.get();
+		success: {
+			for (int i=0; i < reps; i++)
+				if (metricA.apply(tree) <= metricB.apply(tree)) break success;
+			return tree;
+		}
+	}
+	return null;
+}
+
+Function<ArtificialGamePosition,Long> searchMetric(Function<ArtificialGamePosition, SearchResult<?,?>> search, long diff) {
+	return p -> {
+		var res = search.apply(p);
+		if (res.complete()) return res.mainMetrics().expansions() + diff;
+		return Long.MAX_VALUE;
+	};
+}
+Function<ArtificialGamePosition,Long> searchMetric(Function<ArtificialGamePosition, SearchResult<?,?>> search, double factor) {
+	return p -> {
+		var res = search.apply(p);
+		if (res.complete()) return Math.round(res.mainMetrics().expansions() * factor);
+		return Long.MAX_VALUE;
+	};
+}
+Function<ArtificialGamePosition,Long> searchMetric(Function<ArtificialGamePosition, SearchResult<?,?>> search) {
+	return searchMetric(search, 0l);
+}

@@ -1,0 +1,2 @@
+java --class-path ../bin/ visualizer.GenerateBerlinerTreeFigures output/berlinerExamples/colour
+java --class-path ../bin/ visualizer.GenerateBerlinerTreeFigures output/berlinerExamples/monochrome monochrome
