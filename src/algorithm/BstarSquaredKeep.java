@@ -2,32 +2,24 @@ package algorithm;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
-import gametree.GameTreeNode;
-import gametree.IGamePosition;
-import gametree.MetricKeeper;
-import gametree.ResultTreeNode;
-import gametree.SearchTreeNode;
+import gametree.*;
 
 import static gametree.MetricKeeper.*;
+import static gametree.GameTreeNode.*;
 
-/**
- * This implements B*²-logistic with the `dispose all' bounds preservation technique and no shallow or deep irrelevance.
- * <br><br>
- * The additional bounds preservation techniques and the shallow and deep irrelevance stop conditions are 
- * currently implemented in a different branch, and have not been thoroughly tested. Therefore they have
- * not been included here as of now.
- */
-public class BstarSquaredSimple implements SearchAlgorithm {
+public class BstarSquaredKeep implements SearchAlgorithm {
 
 	/**
 	 * @param L1_strategyFunction The strategy function to be used for L1 search.
 	 * @param L2_strategyFunction The strategy function to be used for L2 search.
 	 */
-	public BstarSquaredSimple(StopCondition extraStopCondition, StrategyFunction... strategyFunctions) {
+	public BstarSquaredKeep(StopCondition extraStopCondition, StrategyFunction... strategyFunctions) {
 		for (var s : strategyFunctions)
 			if (s == null) throw new NullPointerException("Strategy function may not be `null`");
 		if (strategyFunctions.length <= 0) throw new IllegalArgumentException("Must have at least one strategy function");
@@ -43,7 +35,7 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 	 * @param L1_strategyFunction The strategy function to be used for L1 search.
 	 * @param L2_strategyFunction The strategy function to be used for L2 search.
 	 */
-	public BstarSquaredSimple(StrategyFunction... strategyFunctions) {
+	public BstarSquaredKeep(StrategyFunction... strategyFunctions) {
 		this(StopCondition.NONE, strategyFunctions);
 	}
 
@@ -51,14 +43,14 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
 	 * @param L1_strategyFunction The strategy function to be used for L1 search.
 	 */
-	public BstarSquaredSimple(StopCondition extraStopCondition, StrategyFunction L1_strategyFunction) {
+	public BstarSquaredKeep(StopCondition extraStopCondition, StrategyFunction L1_strategyFunction) {
 		this(extraStopCondition, L1_strategyFunction, StrategyFunction.PROVEBEST);
 	}
 	/**
 	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
 	 * @param L1_strategyFunction The strategy function to be used for L1 search.
 	 */
-	public BstarSquaredSimple(StrategyFunction L1_strategyFunction) {
+	public BstarSquaredKeep(StrategyFunction L1_strategyFunction) {
 		this(StopCondition.NONE, L1_strategyFunction, StrategyFunction.PROVEBEST);
 	}
 
@@ -93,7 +85,80 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 	public void useBonusEvaluations(boolean set) {
 		variant.bonusEvalsOnCreation = set;
 	}
+	public void setAsDisposeAll(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance) {
+		variant.keepChildrenAfterL2	= false;
+		variant.windowedPruning		= false;
+		variant.bonusEvalsOnCreation	= bonusEvals;
+		variant.irrelevanceStopping	= shallowIrrelevance;
+		variant.deepIrrelevance		= deepIrrelevance;
+	}
+	public void setAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard) {
+		variant.keepChildrenAfterL2		= true;
+		variant.windowedPruning			= false;
+		variant.keepChildrenAfterQuery	= neverDiscard;
+		variant.keepLazyExpansions		= false;
+		variant.bonusEvalsOnCreation		= false;
+		variant.irrelevanceStopping		= shallowIrrelevance;
+		variant.deepIrrelevance			= deepIrrelevance;
+	}
+	public void setAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard) {
+		variant.keepChildrenAfterL2		= true;
+		variant.windowedPruning			= true;
+		variant.keepChildrenAfterQuery	= neverDiscard;
+		variant.keepLazyExpansions		= false;	
+		variant.bonusEvalsOnCreation		= false;
+		variant.irrelevanceStopping		= shallowIrrelevance;
+		variant.deepIrrelevance			= deepIrrelevance;
+	}
+	public void setAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard) {
+		variant.keepChildrenAfterL2		= true;
+		variant.windowedPruning			= false;
+		variant.keepChildrenAfterQuery	= neverDiscard;
+		variant.keepLazyExpansions		= true;	
+		variant.bonusEvalsOnCreation		= bonusEvals;
+		variant.irrelevanceStopping		= shallowIrrelevance;
+		variant.deepIrrelevance			= deepIrrelevance;
+	}
+	public void setAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance) {
+		setAsKeepIgnore(shallowIrrelevance, deepIrrelevance, true); }
+	public void setAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance) {
+		setAsKeepWindowed(shallowIrrelevance, deepIrrelevance, true); }
+	public void setAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance) {
+		setAsKeepLazy(bonusEvals, shallowIrrelevance, deepIrrelevance, true); }
 
+	public static BstarSquaredKeep getAsDisposeAll(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
+		var res = new BstarSquaredKeep(strategyFunctions);
+		res.setAsDisposeAll(bonusEvals, shallowIrrelevance, deepIrrelevance);
+		return res;
+	}
+	
+	public static BstarSquaredKeep getAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
+		return getAsKeepIgnore(shallowIrrelevance, deepIrrelevance, true, strategyFunctions);
+	}
+	public static BstarSquaredKeep getAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard, StrategyFunction... strategyFunctions) {
+		var res = new BstarSquaredKeep(strategyFunctions);
+		res.setAsKeepIgnore(shallowIrrelevance, deepIrrelevance, neverDiscard);
+		return res;
+	}
+	
+	public static BstarSquaredKeep getAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
+		return getAsKeepWindowed(shallowIrrelevance, deepIrrelevance, true, strategyFunctions);
+	}
+	public static BstarSquaredKeep getAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard, StrategyFunction... strategyFunctions) {
+		var res = new BstarSquaredKeep(strategyFunctions);
+		res.setAsKeepWindowed(shallowIrrelevance, deepIrrelevance, neverDiscard);
+		return res;
+	}
+	
+	public static BstarSquaredKeep getAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
+		return getAsKeepLazy(bonusEvals, shallowIrrelevance, deepIrrelevance, true, strategyFunctions);
+	}
+	public static BstarSquaredKeep getAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard, StrategyFunction... strategyFunctions) {
+		var res = new BstarSquaredKeep(strategyFunctions);
+		res.setAsKeepLazy(bonusEvals, shallowIrrelevance, deepIrrelevance, neverDiscard);
+		return res;
+	}
+	
 	private int level = 1;
 	void setLevel(int newLevel) { level = newLevel; }
 
@@ -108,7 +173,11 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 
 		var settings = new L1Position.Settings(level, start, space_limit, time_limit, L1_metrics, L2_metrics, true_metrics, metrics, strategyFunctions, variant);
 		settings.expectIncorrectBounds = expectIncorrectBounds;
-		L1Position<P> L1_root = new L1Position<P>(settings, root, root.lowerbound(), root.upperbound());
+		L1Position<P> L1_root;
+		if (variant.keepChildrenAfterL2)
+			L1_root = new L1PositionKeep<P>(settings, root, root.lowerbound(), root.upperbound());
+		else
+			L1_root = new L1Position<P>(settings, root, root.lowerbound(), root.upperbound());
 		incrementEvaluations(2, combineArrays(metrics, L1_metrics));
 		
 		// at first a tree with irrelevance pruning and position pruning to depth 2 was used.
@@ -123,7 +192,11 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 		MetricKeeper[] l1_list = combineArrays(new MetricKeeper[] {L1_metrics}, metrics);
 		adjustNodeCount(1, l1_list);
 		StopCondition total_limit = (n, m) -> space_limit.reachedSum(L1_metrics, L2_metrics);
-		BstarBasic b1 = new BstarBasic(total_limit.or(stopCondition), strategyFunctions[0]);
+		SearchWithTree b1;
+		if (settings.variant.windowedPruning && settings.level != 1)
+			 b1 = new BstarWindowed(total_limit.or(stopCondition), strategyFunctions[0]);
+		else b1 = new    BstarBasic(total_limit.or(stopCondition), strategyFunctions[0]);
+		
 		b1.expectIncorrectBounds(true);
 		var L1_result = b1.searchWithTree(L1_tree, time_limit, space_limit, l1_list);
 		var result = new ResultTreeNode<>(L1_result.root(), l1 -> l1.original);
@@ -140,10 +213,12 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 		private static final long serialVersionUID = 1L;
 		
 		boolean marker = false;
+		boolean ofKeepL2 = false;
 		
 		public SearchTreeNodeModified(Settings settings, SearchTreeNode<L1Position<P>> parent,
 				L1Position<P> position, MetricKeeper... metrics) {
 			super(settings, parent, position, metrics);
+			ofKeepL2 = position instanceof L1PositionKeep;
 		}
 		public SearchTreeNodeModified(Settings settings, L1Position<P> position, MetricKeeper... metrics) {
 			this(settings, null, position, metrics);
@@ -160,11 +235,93 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 		protected SearchTreeNodeModified<P> createChild(SearchTreeNode<L1Position<P>> parent, L1Position<P> position) {
 			var result = new SearchTreeNodeModified<P>(parent.settings(), parent, position, parent.getAttachedMetrics());
 			position.setTree(result);
+			if (result.ofKeepL2 && position.evaluated) {
+				double[] bounds = result.getBoundsPointer();
+				bounds[0] = position.lowerbound;
+				bounds[1] = position.upperbound;
+			}
 			return result;
 		}
 		@Override
 		public SearchTreeNodeModified<P> parent() {
 			return (SearchTreeNodeModified<P>) super.parent();
+		}
+		@Override
+		public long nodeSize() {
+			// this ensures that the node-count of L1Position.children is respected when these nodes are pruned:
+			if (ofKeepL2 && position() != null) return ((L1PositionKeep<?>) position()).childrenSize() + 1l;
+			return 1l;
+		}
+	}
+	
+	public static class L1PositionKeep<P extends IGamePosition<P>> extends L1Position<P> {
+		public L1PositionKeep(Settings settings, P original) {
+			super(settings, original);
+			children = null;
+			expanded = false;
+		}
+		public L1PositionKeep(Settings settings, P original, double lowerbound, double upperbound) {
+			super(settings, original, lowerbound, upperbound);
+			children = null;
+			expanded = false;
+		}
+		L1PositionKeep<?>[] children;
+		boolean expanded;
+		
+		public long childrenSize() {
+			if (children != null) return children.length;
+			return 0l;
+		}
+		
+		@Override
+		public void evaluate() {
+			if (evaluated && (expanded || s.variant.keepLazyExpansions)) return;
+			MetricKeeper[] metrics = combineArrays(s.other_metrics, s.L2_metrics);
+			
+			var L2_result = performLeveledSearch(metrics);
+			// this call also sets "evaluated" to 'true':
+			recordResults(L2_result);
+			var L2_root = L2_result.root();
+			var L2_children = L2_root.children(metrics);
+			if (L0_tree != null && L0_tree.depth() > 0) {
+				// this removes children that are irrelevant to the search
+				//  from the L1 tree before they even reach it, reducing the number of nodes
+				L2_children.removeIf(c -> !quickRelevant(
+					L2_root.maximising(),lowerbound,upperbound,c.lowerbound(metrics),c.upperbound(metrics)));
+			}
+			children = new L1PositionKeep<?>[L2_children.size()];
+			for (int i=0; i < children.length; i++) {
+				var L2_child = L2_children.get(i);
+				L1PositionKeep<P> child = new L1PositionKeep<P>(s, L2_child.position(), L2_child.lowerbound(metrics), L2_child.upperbound(metrics));
+				child.setTree(L0_tree);
+				children[i] = child;
+			}
+			expanded = true;
+			
+			adjustNodeCount(-s.L2_metrics.nodes(), metrics);
+			adjustNodeCount(children.length, s.L1_metrics);
+			s.true_metrics.setNodeCount(s.L1_metrics.nodes());
+		}
+		
+		@SuppressWarnings("unchecked")
+		@Override
+		public Collection<L1Position<P>> next() {
+			if (s.variant.keepLazyExpansions && !expanded) {
+				return original.next().stream().map(n -> {
+					var res = (L1Position<P>) new L1PositionKeep<P>(s, n);
+					res.setTree(L0_tree);
+					return res;
+				}).toList();
+			}
+			evaluate();
+			List<L1Position<P>> result = new ArrayList<L1Position<P>>(children.length);
+			for (var child : children) result.add((L1PositionKeep<P>) child);
+			if (!s.variant.keepChildrenAfterQuery) {
+				adjustNodeCount(-children.length, s.L1_metrics);
+				expanded = false;
+				children = null;
+			}
+			return result;
 		}
 	}
 
@@ -172,13 +329,13 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 
 		final P original;
 		final Settings s;
-		private SearchTreeNodeModified<P> L0_tree = null;
+		SearchTreeNodeModified<P> L0_tree = null;
 		
-		private boolean evaluated;
-		private double lowerbound, upperbound;
-		private long depthOfLower, depthOfUpper;
+		boolean evaluated;
+		double lowerbound, upperbound;
+		long depthOfLower, depthOfUpper;
 		
-		private StopCondition stopping;
+		StopCondition stopping;
 		
 		public static class Settings {
 
@@ -234,7 +391,7 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 					if (l0b[0] == cBounds[0] && l0b[1] == cBounds[1]) return false;
 					l0b[0] = cBounds[0];
 					l0b[1] = cBounds[1];
-					boolean stopSearching = irrelevanceCheck(p, cBounds);
+					boolean stopSearching = irrelevanceCheck(p, cBounds, true);
 					return stopSearching;
 				};
 			}
@@ -280,9 +437,9 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 		 *   then can we reduce the number of expansions coming next?
 		 */
 		
-		private boolean irrelevanceCheck(SearchTreeNodeModified<P> parent, double[] cBounds) {
+		private boolean irrelevanceCheck(SearchTreeNodeModified<P> parent, double[] cBounds, boolean first_call) {
 			double[] pBounds = parent.getBoundsPointer();
-			if (s.variant.bonusEvalsOnCreation && !parent.marker) {
+			if (s.variant.bonusEvalsOnCreation && first_call && !parent.marker) {
 				// this marker is only used here, to mark whether we need to shadow-update this parent's bounds
 				parent.marker = true;
 				
@@ -333,65 +490,95 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 			
 			var pchildren = parent.children();
 			
+			// experiments have shown that editing the L1 tree
+			//  in-place during L2 search results in huge stalling
+			// the reason is yet unknown
+			pBounds = new double[] {pBounds[0], pBounds[1]};
+			
 			if (parent.maximising()) {
 				// lower bound can be raised
 				pBounds[0] = Math.max(pBounds[0], cBounds[0]);
 				// upper bound can be lowered
 				pBounds[1] = cBounds[1];
 				// but only as much as the siblings allow
-				for (var child : pchildren)
-					pBounds[1] = Math.max(pBounds[1], child.getBoundsPointer()[1]);
+				for (var child : pchildren) {
+					var point = child.getBoundsPointer();
+					if (point == cBounds) continue;
+					pBounds[1] = Math.max(pBounds[1], point[1]);
+				}
 			} else {
 				// upper bound can be lowered
 				pBounds[1] = Math.min(pBounds[1], cBounds[1]);
 				// lower bound can be raised
 				pBounds[0] = cBounds[0];
 				// same as above: only as siblings allow
-				for (var child : pchildren)
-					pBounds[0] = Math.min(pBounds[0], child.getBoundsPointer()[0]);
+				for (var child : pchildren) {
+					var point = child.getBoundsPointer();
+					if (point == cBounds) continue;
+					pBounds[0] = Math.min(pBounds[0], point[0]);
+				}
 			}
-			return irrelevanceCheck(parent.parent(), pBounds);
+			return irrelevanceCheck(parent.parent(), pBounds, false);
+		}
+		
+		SearchResult<?,P> performLeveledSearch(MetricKeeper[] m) {
+			SearchAlgorithm b2;
+			if (s.strategyFunctions.length == 2) {
+				if (s.variant.windowedPruning) {
+					b2 = new BstarWindowed(stopping, s.strategyFunctions[1]);
+					var w2 = (BstarWindowed) b2;
+					if (evaluated) w2.setRelevantWindow(lowerbound, upperbound);
+					else {
+						double[] bounds = L0_tree.getBoundsPointer();
+						w2.setRelevantWindow(bounds[0], bounds[1]);
+					}
+					w2.expectIncorrectBounds(s.expectIncorrectBounds);
+				} else {
+					b2 = new BstarBasic(stopping, s.strategyFunctions[1]);
+					((BstarBasic) b2).expectIncorrectBounds(s.expectIncorrectBounds);
+				}
+			} else {
+				b2 = new BstarSquaredKeep(stopping, Arrays.copyOfRange(s.strategyFunctions, 1, s.strategyFunctions.length));
+				((BstarSquaredKeep) b2).setLevel(s.level+1);
+				if (s.variant.applyIrrelevanceStoppingToL3) {
+					((BstarSquaredKeep) b2).useIrrelevanceStoppingAtAllLevels(true);
+					((BstarSquaredKeep) b2).useDeepIrrelevance(s.variant.deepIrrelevance);
+				}
+			}
+			Duration elapsed_time = Duration.between(s.start, Instant.now());
+			Duration time_remaining = s.time_limit.minus(elapsed_time);
+			// limitEvaluations, maxEvaluations, limitExpansions, maxExpansions, limitMaxNodes, maxNodes
+			Limits L2_limit = new Limits(
+					s.space_limit.limitEvaluations(), s.space_limit.maxEvaluations() - s.true_metrics.evaluations(),
+					s.space_limit.limitExpansions(), s.space_limit.maxExpansions() - s.L1_metrics.expansions() - s.true_metrics.expansions(),
+					true, getLimit());
+			
+			// "metrics" includes L2_metrics, so this node count value of 1 is included in L2_metrics.nodes()
+			adjustNodeCount(1, m);
+			return b2.search(original, time_remaining, L2_limit, m);
+		}
+		
+		void recordResults(SearchResult<?,P> L2_result) {
+			var L2_root = L2_result.root();
+			lowerbound = L2_root.lowerbound();
+			upperbound = L2_root.upperbound();
+			depthOfLower = L2_root.depthOfLower();
+			depthOfUpper = L2_root.depthOfUpper();
+			evaluated = true;
+			
+			var result_metrics = L2_result.mainMetrics();
+			s.true_metrics.incrementExpansions(result_metrics.expansions());
+			s.true_metrics.incrementEvaluations(result_metrics.evaluations());
+			s.true_metrics.setNodeCount(result_metrics.maxObservedNodes() + s.L1_metrics.nodes());
 		}
 		
 		public void evaluate() {
 			if (evaluated) return;
 			MetricKeeper[] metrics = combineArrays(s.other_metrics, s.L2_metrics);
 			
-			{
-				SearchAlgorithm b2;
-				if (s.strategyFunctions.length == 2) {
-					b2 = new BstarBasic(stopping, s.strategyFunctions[1]);
-					((BstarBasic) b2).expectIncorrectBounds(s.expectIncorrectBounds);
-				} else {
-					b2 = new BstarSquaredSimple(stopping, Arrays.copyOfRange(s.strategyFunctions, 1, s.strategyFunctions.length));
-					((BstarSquaredSimple) b2).setLevel(s.level+1);
-					if (s.variant.applyIrrelevanceStoppingToL3) {
-						((BstarSquaredSimple) b2).useIrrelevanceStoppingAtAllLevels(true);
-						((BstarSquaredSimple) b2).useDeepIrrelevance(s.variant.deepIrrelevance);
-					}
-				}
-				Duration elapsed_time = Duration.between(s.start, Instant.now());
-				Duration time_remaining = s.time_limit.minus(elapsed_time);
-				// limitEvaluations, maxEvaluations, limitExpansions, maxExpansions, limitMaxNodes, maxNodes
-				Limits L2_limit = new Limits(
-						s.space_limit.limitEvaluations(), s.space_limit.maxEvaluations() - s.true_metrics.evaluations(),
-						s.space_limit.limitExpansions(), s.space_limit.maxExpansions() - s.L1_metrics.expansions() - s.true_metrics.expansions(),
-						true, getLimit());
-				
-				// "metrics" includes L2_metrics, so this node count value of 1 is included in L2_metrics.nodes()
-				adjustNodeCount(1, metrics);
-				var L2_result = b2.search(original, time_remaining, L2_limit, metrics);
-				lowerbound = L2_result.root().lowerbound();
-				upperbound = L2_result.root().upperbound();
-				depthOfLower = L2_result.root().depthOfLower();
-				depthOfUpper = L2_result.root().depthOfUpper();
-				evaluated = true;
-				
-				var result_metrics = L2_result.mainMetrics();
-				s.true_metrics.incrementExpansions(result_metrics.expansions());
-				s.true_metrics.incrementEvaluations(result_metrics.evaluations());
-				s.true_metrics.setNodeCount(result_metrics.maxObservedNodes() + s.L1_metrics.nodes());
-			}
+			var L2_result = performLeveledSearch(metrics);
+			recordResults(L2_result);
+			
 			// all nodes stored in the L2 tree are removed, so we update the metric keepers accordingly
 			adjustNodeCount(-s.L2_metrics.nodes(), metrics);
 			s.true_metrics.setNodeCount(s.L1_metrics.nodes());
@@ -459,15 +646,22 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 		//            > positions of depth=1 children are only generated once, and not again on re-search
 		//            > L2 search is only initiated if the node has no saved bounds
 		
+		boolean keepChildrenAfterL2, keepChildrenAfterQuery;
+		boolean keepLazyExpansions, windowedPruning;
+		
 		boolean requireModifications() {
-			return irrelevanceStopping || bonusEvalsOnCreation;
+			return irrelevanceStopping || bonusEvalsOnCreation || keepChildrenAfterL2 || windowedPruning;
 		}
 		
 		public VariantSetting() {
-			irrelevanceStopping = false;
-			deepIrrelevance = false;
-			applyIrrelevanceStoppingToL3 = false;
-			bonusEvalsOnCreation = false;
+			irrelevanceStopping			= false;
+			deepIrrelevance				= false;
+			applyIrrelevanceStoppingToL3	= false;
+			bonusEvalsOnCreation			= false;
+			keepChildrenAfterL2			= false;
+			keepChildrenAfterQuery		=  true;
+			keepLazyExpansions			= false;
+			windowedPruning				= false;
 		}
 	}
 

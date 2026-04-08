@@ -151,7 +151,7 @@ public interface StrategyFunction {
 						break;
 					}
 			if (!has_metrics) {
-				subtree_meter = new MetricKeeper(metric_name,0,0,x.countSavedSubTree());
+				subtree_meter = new MetricKeeper(metric_name,0,0,x.countSavedSubTree(true));
 				x.attachMetrics(subtree_meter);
 				x.updateMetrics();
 			}

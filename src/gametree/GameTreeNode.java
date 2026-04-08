@@ -155,6 +155,8 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * in the game position this game tree node represents.
 	 */
 	public List<N> children(MetricKeeper... metrics) {
+		var saved = savedChildren();
+		if (saved.isPresent()) return saved.get();
 		return _children(combineMetricList(metrics));
 	}
 	
@@ -184,6 +186,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * @return The upper-bound value for this game position
 	 */
 	public double upperbound(MetricKeeper... metrics) {
+		if (hasSavedBounds()) return _upperbound();
 		return _upperbound(combineMetricList(metrics));
 	}
 	
@@ -207,6 +210,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * @return The lower-bound value for this game position
 	 */
 	public double lowerbound(MetricKeeper... metrics) {
+		if (hasSavedBounds()) return _lowerbound();
 		return _lowerbound(combineMetricList(metrics));
 	}
 	
@@ -264,6 +268,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * value.
 	 */
 	public long depthOfUpper(MetricKeeper... metrics) {
+		if (hasSavedBounds()) return _depthOfUpper();
 		return _depthOfUpper(combineMetricList(metrics));
 	}
 	
@@ -286,6 +291,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * value.
 	 */
 	public long depthOfLower(MetricKeeper... metrics) {
+		if (hasSavedBounds()) return _depthOfLower();
 		return _depthOfLower(combineMetricList(metrics));
 	}
 	
@@ -294,19 +300,28 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 */
 	protected abstract long _depthOfLower(MetricKeeper... metrics);
 	
+	protected long nodeSize() {
+		return 1l;
+	}
+	
 	/**
 	 * @return The size, in number of nodes, of the sub-tree of saved nodes starting at this node, including this one (minimum of {@code 1})
 	 */
-	public long countSavedSubTree() {
+	public long countSavedSubTree(boolean countSelf) {
 //		var children = savedChildren();
 //		if (children.isEmpty() || children.get().size() <= 0) return 1;
 //		return 1 + children.get().stream().mapToLong(GameTreeNode::countSavedSubTree).sum();
 		long count = 0;
 		ArrayList<GameTreeNode<?,?>> stack = new ArrayList<>();
-		stack.addLast(this);
+		if (!countSelf) {
+			var children = savedChildren();
+			if (children.isPresent())
+				stack.addAll(children.get());
+		} else
+			stack.addLast(this);
 		while (!stack.isEmpty()) {
 			var current = stack.removeLast();
-			count++;
+			count += nodeSize();
 			
 			var children = current.savedChildren();
 			if (children.isPresent())
@@ -451,6 +466,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	}
 	
 	// UTILITY FUNCTIONS FOR GAME-TREE IMPLEMENTATIONS
+	public static final boolean USE_EXPERIMENTAL_BOUNDS_UPDATE = false;
 	/**
 	 * Adjust the bounds of a node.
 	 * @param <N> Type of the GameTreeNode
@@ -462,8 +478,29 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * @param metrics
 	 * @return {@code true} if the bounds were changed, {@code false} otherwise.
 	 */
-	public static <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> boolean adjustBounds(boolean maximising, double[] lowerUpper, long[] depthLowerUpper, List<N> children, MetricKeeper... metrics) {
+	public static <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> boolean adjustBounds(
+			boolean maximising, double[] lowerUpper, long[] depthLowerUpper, List<N> children, MetricKeeper... metrics) {
+		return adjustBounds(maximising, lowerUpper, depthLowerUpper, children, USE_EXPERIMENTAL_BOUNDS_UPDATE, metrics);
+	}
+	/**
+	 * Adjust the bounds of a node.
+	 * @param <N> Type of the GameTreeNode
+	 * @param <P> Type of the IGamePosition
+	 * @param maximising whether the parent node is maximising or not
+	 * @param lowerUpper an array of size 2 containing the lower- and upper-bound of the parent (unchecked)
+	 * @param depthLowerUpper an array of size 2 containing the depth of the lower- and upper-bound of the parent (unchecked)
+	 * @param children the children of the parent node
+	 * @param experimental whether or not to update the lowerUpper array in-place. This setting 
+	 * also makes the node adjustment only update bounds if they improve, modifying Bstar-Squared behaviour.
+	 * @param metrics
+	 * @return {@code true} if the bounds were changed, {@code false} otherwise.
+	 */
+	public static <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> boolean adjustBounds(
+			boolean maximising, double[] lowerUpper, long[] depthLowerUpper, List<N> children,
+			boolean experimental, MetricKeeper... metrics) {
+		
 		if (children.size() <= 0) return false;
+		boolean res = false;
 		double lower = maximising? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
 		double upper = lower;
 		for (var child : children) {
@@ -477,6 +514,12 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 				else 
 					depthLowerUpper[1] = child.depthOfUpper(metrics) + 1;
 				upper = child_upper;
+				// TODO: evaluate this, it seems this modification might affect all
+				//       versions of B*, including df-B*, regular B*, and B*-squared
+				// this is an improvement for earlier pruning in B*-squared:
+				if (experimental && !maximising && upper < lowerUpper[1]) {
+					lowerUpper[1] = upper; res = true;
+				}
 			} // adjust lower-bound:
 			if ((maximising && child_lower >= lower) || (!maximising && child_lower <= lower)) {
 				// adjust the depth of lower-bound:
@@ -485,9 +528,15 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 				else
 					depthLowerUpper[0] = child.depthOfLower(metrics) + 1;
 				lower = child_lower;
+				// TODO: evaluate this, it seems this modification might affect all
+				//       versions of B*, including df-B*, regular B*, and B*-squared
+				// this is an improvement for earlier pruning in B*-squared:
+				if (experimental && maximising && lower > lowerUpper[0]) { 
+					lowerUpper[0] = lower; res = true;
+				}
 			}
 		}
-		boolean res = lowerUpper[0] != lower || lowerUpper[1] != upper;
+		res |= lowerUpper[0] != lower || lowerUpper[1] != upper;
 		lowerUpper[0] = lower;
 		lowerUpper[1] = upper;
 		return res;
@@ -656,6 +705,16 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 //				 (!p.maximising() && lowerbound(m) >= p.upperbound(m) && upperbound(m) != p.upperbound(m)) ||
 //				 (p.lowerbound(m) == p.upperbound(m)));
 //	}
+	
+	public static boolean quickRelevant(boolean pMaximising, double pLower, double pUpper, double cLower, double cUpper) {
+		if (pLower == pUpper) return false;
+		if ((pMaximising && cUpper <= pLower && cLower < pLower)
+		|| (!pMaximising && cLower >= pUpper && cUpper > pUpper)) return false;
+		// the edge cases where c is a terminal node which lies on the pessimistic bound of the parent 
+		//   are ignored here, and all count as relevant, because this is mostly used for self-check,
+		//   where c being terminal is already enough to stop the search.
+		return true;
+	}
 	
 	public boolean isRelevant(MetricKeeper... metrics) {
 		var p = parent();

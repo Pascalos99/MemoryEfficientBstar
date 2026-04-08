@@ -43,6 +43,7 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 		
 		public boolean frozen = false;
 		public boolean allow_manual_edits = false;
+		public boolean inplace_updates = false;
 		public boolean prune_positions;
 		public long position_pruning_depth;
 		public boolean prune_irrelevance;
@@ -94,8 +95,8 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	private ArrayList<SearchTreeNode<P>> children;
 	private boolean expanded, evaluated;
 	private boolean maximising;
-	private double lowerbound, upperbound;
-	private long depthLower, depthUpper;
+	private final double[] lowerbound_upperbound;
+	private final long[] depthLower_depthUpper;
 	
 	public SearchTreeNode(Settings settings, SearchTreeNode<P> parent, P position, MetricKeeper...metrics) {
 		super(parent, position, metrics);
@@ -103,11 +104,10 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 		if (settings == null) throw new NullPointerException("SearchTreeNode cannot be initialized with `null` settings");
 		this.settings = settings;
 		maximising = position.maximising();
-		depthLower = depthUpper = 0;
+		depthLower_depthUpper = new long[]{0, 0};
 		expanded = evaluated = false;
 		children = null;
-		lowerbound = Double.NEGATIVE_INFINITY;
-		upperbound = Double.POSITIVE_INFINITY;
+		lowerbound_upperbound = new double[]{Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY};
 	}
 	public SearchTreeNode(Settings settings, P position, MetricKeeper... metrics) {
 		this(settings, null, position, metrics);
@@ -166,6 +166,13 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	}
 	public boolean allowModifications() {
 		return settings.allow_manual_edits;
+	}
+	
+	public void setInplaceUpdates(boolean set) {
+		settings.inplace_updates = set;
+	}
+	public boolean hasInplaceUpdates() {
+		return settings.inplace_updates;
 	}
 	
 	/**
@@ -237,7 +244,7 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	public void disableIncorrectBoundsProtection() {
 		settings.prune_irrelevance_light = false;
 	}
-
+	
 	@Override
 	public ArrayList<SearchTreeNode<P>> _children(MetricKeeper... metrics) {
 		// "children == null" is only true if this node has not been expanded OR if it has been pruned.
@@ -291,8 +298,8 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 			// if the tree has been frozen, no evaluations are done, and the `evaluated` flag stays `false`:
 			if (settings.frozen) return false;
 			// otherwise, evaluate this node:
-			upperbound = position().upperbound();
-			lowerbound = position().lowerbound();
+			lowerbound_upperbound[0] = position().lowerbound();
+			lowerbound_upperbound[1] = position().upperbound();
 			evaluated = true;
 			// update the metric-keepers of this node evaluation:
 			//  - both upper and lower are evaluated, so 2 evaluations are done
@@ -305,27 +312,27 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	
 	public boolean setBounds(double lowerbound, double upperbound) {
 		if (!settings.allow_manual_edits) throw new RuntimeException("Not allowed to edit node bounds, enable edits first!");
-		boolean res = lowerbound != this.lowerbound || upperbound != this.upperbound;
-		this.lowerbound = lowerbound;
-		this.upperbound = upperbound;
+		boolean res = lowerbound != lowerbound_upperbound[0] || upperbound != lowerbound_upperbound[1];
+		lowerbound_upperbound[0] = lowerbound;
+		lowerbound_upperbound[1] = upperbound;
 		evaluated = true;
 		return res;
 	}
-	
-	public void removeChildren(boolean markAsPruned) {
-		if (!settings.allow_manual_edits) return;
-		children = null;
-		expanded = markAsPruned;
+	/**
+	 * @return a double array {@code res} where {@code res[0]} is the {@link #lowerbound(MetricKeeper...)}
+	 *  and {@code res[1]} is the {@link #upperbound(MetricKeeper...)} of this node.
+	 */
+	public double[] getBoundsPointer() {
+		if (!settings.allow_manual_edits) throw new RuntimeException("Not allowed to edit node bounds, enable edits first!");
+		return lowerbound_upperbound;
 	}
-	
-	public void setChildren(Collection<SearchTreeNode<P>> newChildren) {
-		for (var child : newChildren) {
-			child.setParent(this);
-			child.settings = settings;
-		}
-		children = new ArrayList<>(newChildren);
-		expanded = true;
-		evaluated = true;
+	/**
+	 * @return a double array {@code res} where {@code res[0]} is the {@link #depthOfLower(MetricKeeper...)}
+	 *  and {@code res[1]} is the {@link #depthOfUpper(MetricKeeper...)} of this node.
+	 */
+	public long[] getDepthsPointer() {
+		if (!settings.allow_manual_edits) throw new RuntimeException("Not allowed to edit node bounds, enable edits first!");
+		return depthLower_depthUpper;
 	}
 	
 	public boolean isEvaluated() {
@@ -337,7 +344,7 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 		// `evaluate` returns `false` if the tree is frozen, in that case we cannot give a value
 		//  - the result is thus Not-A-Number:
 		if (!evaluate(metrics)) return Double.NaN;
-		return upperbound;
+		return lowerbound_upperbound[1];
 	}
 
 	@Override
@@ -345,7 +352,7 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 		// `evaluate` returns `false` if the tree is frozen, in that case we cannot give a value
 		//  - the result is thus Not-A-Number:
 		if (!evaluate(metrics)) return Double.NaN;
-		return lowerbound;
+		return lowerbound_upperbound[0];
 	}
 	
 	@Override
@@ -363,13 +370,22 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 		// if the tree is frozen or there are no children, no modifications to the bounds are made, nothing has changed:
 		if (settings.frozen || children.size() <= 0) return false;
 		// otherwise, continue as normal:
-		double[] lowerUpper = new double[] {lowerbound, upperbound};
-		long[] depthLowerUpper = new long[] {depthLower, depthUpper};
-		boolean res = GameTreeNode.adjustBounds(maximising(), lowerUpper, depthLowerUpper, children, metrics);
-		lowerbound = lowerUpper[0];
-		upperbound = lowerUpper[1];
-		depthLower = depthLowerUpper[0];
-		depthUpper = depthLowerUpper[1];
+		double[] lowerUpper;
+		long[] depthLowerUpper;
+		if (settings.inplace_updates) {
+			lowerUpper = lowerbound_upperbound;
+			depthLowerUpper = depthLower_depthUpper;
+		} else {
+			lowerUpper = new double[] {lowerbound_upperbound[0], lowerbound_upperbound[1]};
+			depthLowerUpper = new long[] {depthLower_depthUpper[0], depthLower_depthUpper[1]};
+		}
+		boolean res = GameTreeNode.adjustBounds(maximising(), lowerUpper, depthLowerUpper, children, settings.inplace_updates, metrics);
+		if (!settings.inplace_updates) {
+			lowerbound_upperbound[0] = lowerUpper[0];
+			lowerbound_upperbound[1] = lowerUpper[1];
+			depthLower_depthUpper[0] = depthLowerUpper[0];
+			depthLower_depthUpper[1] = depthLowerUpper[1];
+		}
 		evaluated = true;
 		prunePosition();
 		pruneIrrelevantChildren(metrics);
@@ -389,10 +405,10 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 					return false;
 				}
 				if (!settings.prune_irrelevance_light) {
-					adjustNodeCount(-n.countSavedSubTree(), m);
+					adjustNodeCount(-n.countSavedSubTree(true), m);
 					return true;
 				} else {
-					adjustNodeCount(1 - n.countSavedSubTree(), m);
+					adjustNodeCount(-n.countSavedSubTree(false), m);
 					n.children = null;
 					n.expanded = true;
 					return false;
@@ -412,7 +428,7 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 		if (children == null || children.size()==0 || settings.frozen || !settings.prune_irrelevance) return;
 		
 		if (depth()+1 >= settings.irrelevance_pruning_depth) {
-			adjustNodeCount(1 - countSavedSubTree(), m);
+			adjustNodeCount(-countSavedSubTree(false), m);
 			children = null;
 			expanded = true;
 		} else for (var child : children)
@@ -425,12 +441,12 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	
 	@Override
 	public long _depthOfUpper(MetricKeeper... metrics) {
-		return depthUpper;
+		return depthLower_depthUpper[1];
 	}
 
 	@Override
 	public long _depthOfLower(MetricKeeper... metrics) {
-		return depthLower;
+		return depthLower_depthUpper[0];
 	}
 	
 	@Override
@@ -442,7 +458,7 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	
 	@Override
 	public String toString() {
-		return String.format(Locale.CANADA, "%s%.1f-%.1f%s<=={%s}", maximising?"[":"(",lowerbound,upperbound,maximising?"]":")",position());
+		return String.format(Locale.CANADA, "%s%.1f-%.1f%s<=={%s}", maximising?"[":"(",lowerbound_upperbound[0],lowerbound_upperbound[1],maximising?"]":")",position());
 	}
 
 }
