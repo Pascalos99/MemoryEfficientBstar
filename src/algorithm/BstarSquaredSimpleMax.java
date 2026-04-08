@@ -15,11 +15,15 @@ import gametree.SearchTreeNode;
 import static gametree.MetricKeeper.*;
 
 /**
- * This implements B*²-max with the `dispose all' bounds preservation technique and no shallow or deep irrelevance.
+ * This implements B*²-max with the `dispose all' bounds preservation technique.
  * <br><br>
- * The additional bounds preservation techniques and the shallow and deep irrelevance stop conditions are 
- * currently implemented in a different branch, and have not been thoroughly tested. Therefore they have
- * not been included here as of now.
+ * This variant, on the 'extra' branch, implements shallow and deep irrelevance pruning as an additional option
+ * when initiating the SearchAlgorithm. The methods for this are {@link #useIrrelevanceStopping(boolean)} and {@link #useDeepIrrelevance(boolean)}.
+ * Additionally, it is possible to let irrelevance stopping apply to all levels of search for the generalised multi-level B*^k with 
+ * {@link #useIrrelevanceStoppingAtAllLevels(boolean)}. Finally, the {@link #useBonusEvaluations(boolean)} method toggles whether to use
+ * additional function evaluations to provide additional information to irrelevance stopping. This option is not thoroughly described in the thesis,
+ * but allows B*-squared with 'dispose all' to use irrelevance stopping more effectively, at a slight cost of increased function evaluations.
+ * This is mostly untested, but can lead to fewer expansions and evaluations overall, but may also slightly decrease the efficiency of B*-squared.
  */
 public class BstarSquaredSimpleMax implements SearchAlgorithm {
 

@@ -15,6 +15,10 @@ import static gametree.MetricKeeper.*;
 
 /**
  * A B*² implementation which uses Disprove-Best B* at the first-level search only.
+ * <br><br>
+ * For lack of time, this implementation has not been adjusted for the use of
+ * shallow or deep irrelevance. But such variant could easily be obtained by 
+ * modifying the {@link BstarSquaredSimple} or {@link BstarSquaredKeep} classes.
  */
 public class BstarSquaredDB implements SearchAlgorithm {
 

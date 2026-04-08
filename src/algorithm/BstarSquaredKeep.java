@@ -13,11 +13,25 @@ import gametree.*;
 import static gametree.MetricKeeper.*;
 import static gametree.GameTreeNode.*;
 
+/**
+ * This implements B*²-logistic with one of four available bounds preservation techniques.
+ * <br><br>
+ * As with the {@link BstarSquaredSimple} implementation on this branch, this implementation allows
+ * for the optional use of shallow and deep irrelevance stopping.
+ * <br><br>
+ * Additionally, this implementation allows for the option of other bounds preservation techniques.
+ * This is selected through the {@link #setAsDisposeAll(boolean, boolean, boolean)},
+ * {@link #setAsKeepIgnore(boolean, boolean, boolean)}, {@link #setAsKeepLazy(boolean, boolean, boolean, boolean)},
+ * and {@link #setAsKeepWindowed(boolean, boolean, boolean)} methods. Note that the variant should be selected and set
+ * before any search is initiated, as this order results in the expected behavior.
+ */
 public class BstarSquaredKeep implements SearchAlgorithm {
 
 	/**
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
-	 * @param L2_strategyFunction The strategy function to be used for L2 search.
+	 * The first evaluation function provided corresponds to the function used by the first-level search.
+	 * The number of strategy functions provided corresponds to the number of levels of search, with a minimum of two.
+	 * @param extraStopCondition An additional stop condition for the search
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
 	 */
 	public BstarSquaredKeep(StopCondition extraStopCondition, StrategyFunction... strategyFunctions) {
 		for (var s : strategyFunctions)
@@ -32,23 +46,25 @@ public class BstarSquaredKeep implements SearchAlgorithm {
 		variant = new VariantSetting();
 	}
 	/**
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
-	 * @param L2_strategyFunction The strategy function to be used for L2 search.
+	 * The first evaluation function provided corresponds to the function used by the first-level search.
+	 * The number of strategy functions provided corresponds to the number of levels of search, with a minimum of two.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
 	 */
 	public BstarSquaredKeep(StrategyFunction... strategyFunctions) {
 		this(StopCondition.NONE, strategyFunctions);
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
+	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * @param extraStopCondition An additional stop condition for the search
+	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredKeep(StopCondition extraStopCondition, StrategyFunction L1_strategyFunction) {
 		this(extraStopCondition, L1_strategyFunction, StrategyFunction.PROVEBEST);
 	}
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
+	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredKeep(StrategyFunction L1_strategyFunction) {
 		this(StopCondition.NONE, L1_strategyFunction, StrategyFunction.PROVEBEST);
@@ -61,19 +77,33 @@ public class BstarSquaredKeep implements SearchAlgorithm {
 	private VariantSetting variant;
 	
 	/**
-	 * defaults to {@code false}
+	 * Whether or not to expect the evaluation function to provide incorrect bounds. Defaults to {@code false}.
+	 * This increases the memory usage of the search if set to {@code true}.
 	 * @param set
 	 */
 	public void expectIncorrectBounds(boolean set) {
 		expectIncorrectBounds = set;
 	}
+	/**
+	 * @param set if {@code true}, applies shallow irrelevance stopping to the search.
+	 */
 	public void useIrrelevanceStopping(boolean set) {
 		variant.irrelevanceStopping = set;
 	}
+	/**
+	 * @param set if {@code true}, applies shallow and deep irrelevance stopping to the search.
+	 */
 	public void useDeepIrrelevance(boolean set) {
 		variant.deepIrrelevance = set;
 		variant.irrelevanceStopping |= set;
 	}
+	/**
+	 * Irrelevance stopping, if applied to all levels of the search, will also apply 
+	 * deep irrelevance stopping (if this has been enabled by another method) to all
+	 * levels of the search.
+	 * @param set if {@code true}, applies shallow irrelevance stopping to the search for all levels
+	 * of the search. This is specifically for the use of higher level search like B*-cubed or above.
+	 */
 	public void useIrrelevanceStoppingAtAllLevels(boolean set) {
 		variant.applyIrrelevanceStoppingToL3 = set;
 		variant.irrelevanceStopping |= set;
@@ -85,74 +115,239 @@ public class BstarSquaredKeep implements SearchAlgorithm {
 	public void useBonusEvaluations(boolean set) {
 		variant.bonusEvalsOnCreation = set;
 	}
+	/**
+	 * This sets the search to apply the 'full disposal' approach to bounds preservation. This means that the children of 
+	 * the second-level root are never preserved and always revisited upon further investigation of that node as added
+	 * to the first-level tree.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if any of the other two settings are also enabled,
+	 * as they require shallow irrelevance to function.
+	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 */
 	public void setAsDisposeAll(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance) {
-		variant.keepChildrenAfterL2	= false;
-		variant.windowedPruning		= false;
+		variant.keepChildrenAfterL2		= false;
+		variant.windowedPruning			= false;
 		variant.bonusEvalsOnCreation	= bonusEvals;
-		variant.irrelevanceStopping	= shallowIrrelevance;
-		variant.deepIrrelevance		= deepIrrelevance;
+		variant.irrelevanceStopping		= shallowIrrelevance || deepIrrelevance || bonusEvals;
+		variant.deepIrrelevance			= deepIrrelevance;
 	}
+	/**
+	 * This sets the search to apply the 're-search' approach to bounds preservation. This means that the children of the
+	 * second-level root are preserved after the second-level search is terminated. These children are kept for if the node
+	 * is later expanded, and also for shallow and deep irrelevance stopping, if enabled. They could also aim next node selection
+	 * and move ordering at second-level searches, but this has not been implemented here.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if deep irrelevance is enabled.
+	 * <br><br>
+	 * The 'never discard' option defaults to {@code true} in the overloaded variant of this method: {@link #setAsKeepIgnore(boolean, boolean)}.
+	 * If set to {@code false}, the second-level search may at times be re-executed to expand a node, which appears to have a major impact on performance.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param neverDiscard set to {@code true} to keep second-level root children in memory indefinitely, even after they have been requested through a node expansion.
+	 * This could be set to {@code false} to save on some memory space, but could drastically decrease performance if the search often re-expands nodes.
+	 */
 	public void setAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard) {
 		variant.keepChildrenAfterL2		= true;
 		variant.windowedPruning			= false;
 		variant.keepChildrenAfterQuery	= neverDiscard;
 		variant.keepLazyExpansions		= false;
-		variant.bonusEvalsOnCreation		= false;
-		variant.irrelevanceStopping		= shallowIrrelevance;
+		variant.bonusEvalsOnCreation	= false;
+		variant.irrelevanceStopping		= shallowIrrelevance || deepIrrelevance;
 		variant.deepIrrelevance			= deepIrrelevance;
 	}
+	/**
+	 * This sets the search to apply the 'windowed' approach to bounds preservation. This means that the children of the
+	 * second-level root are preserved after the second-level search is terminated. These children are kept for if the node
+	 * is later expanded, and also for shallow and deep irrelevance stopping, if enabled. The bounds are also used for windowed
+	 * pruning during second-level searches.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if deep irrelevance is enabled.
+	 * <br><br>
+	 * The 'never discard' option defaults to {@code true} in the overloaded variant of this method: {@link #setAsKeepWindowed(boolean, boolean)}.
+	 * If set to {@code false}, the second-level search may at times be re-executed to expand a node, which appears to have a major impact on performance.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param neverDiscard set to {@code true} to keep second-level root children in memory indefinitely, even after they have been requested through a node expansion.
+	 * This could be set to {@code false} to save on some memory space, but could drastically decrease performance if the search often re-expands nodes.
+	 */
 	public void setAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard) {
 		variant.keepChildrenAfterL2		= true;
 		variant.windowedPruning			= true;
 		variant.keepChildrenAfterQuery	= neverDiscard;
 		variant.keepLazyExpansions		= false;	
-		variant.bonusEvalsOnCreation		= false;
-		variant.irrelevanceStopping		= shallowIrrelevance;
+		variant.bonusEvalsOnCreation	= false;
+		variant.irrelevanceStopping		= shallowIrrelevance || deepIrrelevance;
 		variant.deepIrrelevance			= deepIrrelevance;
 	}
+	/**
+	 * This sets the search to apply the 'keep bounds' approach to bounds preservation. This means that the children of 
+	 * the second-level root are preserved after the second-level search is terminated. These children are not used for irrelevance
+	 * stopping or node selection, but rather determine the values of new nodes when generated. This reduces the reliance on
+	 * second-level search and thus is somewhat closer to regular B* search.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if any of shallow irrelevance or bonus evaluations are also enabled,
+	 * as they require shallow irrelevance to function.
+	 * <br><br>
+	 * The 'never discard' option defaults to {@code true} in the overloaded variant of this method: {@link #setAsKeepLazy(boolean, boolean)}.
+	 * If set to {@code false}, the second-level search may at times be re-executed to expand a node, which appears to have a major impact on performance.
+	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param neverDiscard set to {@code true} to keep second-level root children in memory indefinitely, even after they have been requested through a node expansion.
+	 * This could be set to {@code false} to save on some memory space, but could drastically decrease performance if the search often re-expands nodes.
+	 */
 	public void setAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard) {
 		variant.keepChildrenAfterL2		= true;
 		variant.windowedPruning			= false;
 		variant.keepChildrenAfterQuery	= neverDiscard;
 		variant.keepLazyExpansions		= true;	
-		variant.bonusEvalsOnCreation		= bonusEvals;
-		variant.irrelevanceStopping		= shallowIrrelevance;
+		variant.bonusEvalsOnCreation	= bonusEvals;
+		variant.irrelevanceStopping		= shallowIrrelevance || deepIrrelevance || bonusEvals;
 		variant.deepIrrelevance			= deepIrrelevance;
 	}
+	/**
+	 * This sets the search to apply the 're-search' approach to bounds preservation. This means that the children of the
+	 * second-level root are preserved after the second-level search is terminated. These children are kept for if the node
+	 * is later expanded, and also for shallow and deep irrelevance stopping, if enabled. They could also aim next node selection
+	 * and move ordering at second-level searches, but this has not been implemented here.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if deep irrelevance is enabled.
+	 * <br><br>
+	 * This method overloads {@link #setAsKeepIgnore(boolean, boolean, boolean)} with a default value of {@code true} for the
+	 * 'never discard' variable. This generally improves the performance of B*-squared variants greatly.
+	 * 
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 */
 	public void setAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance) {
 		setAsKeepIgnore(shallowIrrelevance, deepIrrelevance, true); }
+	/**
+	 * This sets the search to apply the 'windowed' approach to bounds preservation. This means that the children of the
+	 * second-level root are preserved after the second-level search is terminated. These children are kept for if the node
+	 * is later expanded, and also for shallow and deep irrelevance stopping, if enabled. The bounds are also used for windowed
+	 * pruning during second-level searches.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if deep irrelevance is enabled.
+	 * <br><br>
+	 * This method overloads {@link #setAsKeepWindowed(boolean, boolean, boolean)} with a default value of {@code true} for the
+	 * 'never discard' variable. This generally improves the performance of B*-squared variants greatly.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 */
 	public void setAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance) {
 		setAsKeepWindowed(shallowIrrelevance, deepIrrelevance, true); }
+	/**
+	 * This sets the search to apply the 'keep bounds' approach to bounds preservation. This means that the children of 
+	 * the second-level root are preserved after the second-level search is terminated. These children are not used for irrelevance
+	 * stopping or node selection, but rather determine the values of new nodes when generated. This reduces the reliance on
+	 * second-level search and thus is somewhat closer to regular B* search.
+	 * <br><br>
+	 * Note that shallow irrelevance is automatically set to {@code true} if any of shallow irrelevance or bonus evaluations are also enabled,
+	 * as they require shallow irrelevance to function.
+	 * <br><br>
+	 * This method overloads {@link #setAsKeepLazy(boolean, boolean, boolean, boolean)} with a default value of {@code true} for the
+	 * 'never discard' variable. This generally improves the performance of B*-squared variants greatly.
+	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 */
 	public void setAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance) {
 		setAsKeepLazy(bonusEvals, shallowIrrelevance, deepIrrelevance, true); }
 
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsDisposeAll(boolean, boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsDisposeAll(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
 		var res = new BstarSquaredKeep(strategyFunctions);
 		res.setAsDisposeAll(bonusEvals, shallowIrrelevance, deepIrrelevance);
 		return res;
 	}
 	
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsKeepIgnore(boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
 		return getAsKeepIgnore(shallowIrrelevance, deepIrrelevance, true, strategyFunctions);
 	}
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsKeepIgnore(boolean, boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param neverDiscard set to {@code true} to keep second-level root children in memory indefinitely, even after they have been requested through a node expansion.
+	 * This could be set to {@code false} to save on some memory space, but could drastically decrease performance if the search often re-expands nodes.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsKeepIgnore(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard, StrategyFunction... strategyFunctions) {
 		var res = new BstarSquaredKeep(strategyFunctions);
 		res.setAsKeepIgnore(shallowIrrelevance, deepIrrelevance, neverDiscard);
 		return res;
 	}
 	
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsKeepWindowed(boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
 		return getAsKeepWindowed(shallowIrrelevance, deepIrrelevance, true, strategyFunctions);
 	}
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsKeepWindowed(boolean, boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param neverDiscard set to {@code true} to keep second-level root children in memory indefinitely, even after they have been requested through a node expansion.
+	 * This could be set to {@code false} to save on some memory space, but could drastically decrease performance if the search often re-expands nodes.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsKeepWindowed(boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard, StrategyFunction... strategyFunctions) {
 		var res = new BstarSquaredKeep(strategyFunctions);
 		res.setAsKeepWindowed(shallowIrrelevance, deepIrrelevance, neverDiscard);
 		return res;
 	}
 	
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsKeepLazy(boolean, boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, StrategyFunction... strategyFunctions) {
 		return getAsKeepLazy(bonusEvals, shallowIrrelevance, deepIrrelevance, true, strategyFunctions);
 	}
+	/**
+	 * Initialises a B*-squared search engine with the settings as described by {@link #setAsKeepLazy(boolean, boolean, boolean, boolean)}.
+	 * The provided strategy functions are interpreted as by {@link #BstarSquaredKeep(StrategyFunction...)}.
+	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
+	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
+	 * @param deepIrrelevance set to {@code true} to apply deep irrelevance
+	 * @param neverDiscard set to {@code true} to keep second-level root children in memory indefinitely, even after they have been requested through a node expansion.
+	 * This could be set to {@code false} to save on some memory space, but could drastically decrease performance if the search often re-expands nodes.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
+	 * @return The initialised B*-squared engine
+	 */
 	public static BstarSquaredKeep getAsKeepLazy(boolean bonusEvals, boolean shallowIrrelevance, boolean deepIrrelevance, boolean neverDiscard, StrategyFunction... strategyFunctions) {
 		var res = new BstarSquaredKeep(strategyFunctions);
 		res.setAsKeepLazy(bonusEvals, shallowIrrelevance, deepIrrelevance, neverDiscard);
