@@ -1,0 +1,147 @@
+\documentclass[10pt]{reportMaster}
+
+%%%%%%%%%%%%
+% switches %
+%%%%%%%%%%%%
+% Define the switch using "\newif\ifNAME", where the name of the switch is "NAME"
+%%
+\newif\ifMonochrome
+\newif\ifThousandsComma
+%%
+% By default, all switches are 'false'. Use "\NAMEtrue" to set "NAME" to 'true'.
+% Uncomment lines below to toggle switches on:
+%%
+%
+% Sets the document to a monochrome version that is better to print in black-and-white
+%%%%%%%%%%%%
+% \Monochrometrue
+\ThousandsCommatrue
+%
+%%%%%%%%%%%%
+
+\usepackage[a4paper]{geometry}
+\usepackage{subcaption}
+\usepackage{placeins}
+\usepackage{amsmath,amssymb}
+\usepackage{mathtools}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{refcount}
+\usepackage{scrextend}
+\usepackage{doi}
+\renewcommand{\doitext}{}
+\usepackage{apacite}
+\usepackage[table]{xcolor}
+\usepackage{cleveref}
+\usepackage{multirow}
+\usepackage{changepage}
+% \usepackage{tabularray}
+% \usepackage[table]{xcolor}
+
+%%
+% Use commands to imitate behaviour from book class, 
+%  which cannot be used due to 'reportMaster' being 
+%  a type of "report" document.
+% Found at: https://tex.stackexchange.com/a/154666
+%%
+\newcommand\frontmatter{%
+    \cleardoublepage
+  \pagenumbering{roman}}
+
+\newcommand\mainmatter{%
+    \cleardoublepage
+  \pagenumbering{arabic}}
+
+% Command for thousands separator
+\ifThousandsComma
+  \newcommand{\thsep}{,}
+\else
+  \newcommand{\thsep}{\,}
+\fi
+
+
+\makeatletter
+%%
+% Use modified titlepage environment to NOT reset
+%  page numbering when inside the titlepage and abstract
+% Found at: https://tex.stackexchange.com/a/172005
+%%
+\renewenvironment{titlepage}
+ {
+  \if@twocolumn
+    \@restonecoltrue\onecolumn
+  \else
+    \@restonecolfalse\newpage
+  \fi
+  \thispagestyle{empty}
+ }
+ {
+  \if@restonecol
+    \twocolumn
+  \else
+    \newpage
+  \fi
+ }
+% %
+% Use modified command to fix hyperref linking to 
+%  the wrong algorithm for pseudocode line labels.
+% Found at: https://tex.stackexchange.com/a/148977
+%%
+\providecommand\theHALG@line{\thealgorithm.\arabic{ALG@line}}
+\makeatother
+
+%%% The title of the thesis, and the author (student) of the thesis
+\title{Memory Efficient B*}
+\author{Pascal R. Anema}
+
+%%% Uncomment the line with the Master program of the student
+% \nameMastersProgramme{Data Science for Decision Making}  
+\nameMastersProgramme{Artificial Intelligence}
+
+%%% Here, write the department supervisor(s), as well as all department examiners; 
+%%% Write also any external supervisor(s), if applicable
+\committee{Prof. Dr. Mark H. M. Winands \\ Dr. Dennis J. N. J. Soemers}
+\date{\today}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+%%%% PREFACE %%%%
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+\thispagestyle{empty}
+\input{preface}
+
+%%%% Abstract %%%%
+\begin{abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+    \input{abstract}
+\end{abstract}
+
+\newpage
+\addcontentsline{toc}{chapter}{Contents}
+\tableofcontents
+
+%%%% Article %%%%
+\mainmatter
+\input{chapters.tex}
+
+%%%% Bibliography %%%%
+% Apply a small adjustment to the margins and the line-spacing
+%  to allow everything to fit in 2 pages
+% \begingroup
+% \linespread{0.98}\selectfont
+\begin{adjustwidth}{0pt}{-4pt}
+\bibliographystyle{apacite-list-all-authors}
+\bibliography{bibliography.bib}
+\end{adjustwidth}
+% \endgroup
+
+\newpage
+\begin{appendix}
+    \input{appendix.tex}
+\end{appendix}
+
+\end{document}
