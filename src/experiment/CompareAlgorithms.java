@@ -147,6 +147,9 @@ public class CompareAlgorithms {
 				: write_to + ".table";
 		final boolean append = new File(write_to).exists();
 		final boolean t_append = new File(t_write_to).exists();
+		
+		if (!append)
+			new File(write_to).getParentFile().mkdirs();
 
 		final boolean hasTableSharing = number_of_tables > 0;
 		final Table[] shared_tables = new Table[number_of_tables];
