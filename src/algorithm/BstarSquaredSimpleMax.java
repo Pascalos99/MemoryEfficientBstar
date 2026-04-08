@@ -28,8 +28,10 @@ import static gametree.MetricKeeper.*;
 public class BstarSquaredSimpleMax implements SearchAlgorithm {
 
 	/**
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
-	 * @param L2_strategyFunction The strategy function to be used for L2 search.
+	 * The first evaluation function provided corresponds to the function used by the first-level search.
+	 * The number of strategy functions provided corresponds to the number of levels of search, with a minimum of two.
+	 * @param extraStopCondition An additional stop condition for the search
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StopCondition extraStopCondition, StrategyFunction... strategyFunctions) {
 		for (var s : strategyFunctions)
@@ -44,23 +46,25 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		variant = new VariantSetting();
 	}
 	/**
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
-	 * @param L2_strategyFunction The strategy function to be used for L2 search.
+	 * The first evaluation function provided corresponds to the function used by the first-level search.
+	 * The number of strategy functions provided corresponds to the number of levels of search, with a minimum of two.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StrategyFunction... strategyFunctions) {
 		this(StopCondition.NONE, strategyFunctions);
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
+	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * @param extraStopCondition An additional stop condition for the search
+	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StopCondition extraStopCondition, StrategyFunction L1_strategyFunction) {
 		this(extraStopCondition, L1_strategyFunction, StrategyFunction.PROVEBEST);
 	}
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
+	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StrategyFunction L1_strategyFunction) {
 		this(StopCondition.NONE, L1_strategyFunction, StrategyFunction.PROVEBEST);
@@ -73,19 +77,33 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 	private VariantSetting variant;
 	
 	/**
-	 * defaults to {@code false}
+	 * Whether or not to expect the evaluation function to provide incorrect bounds. Defaults to {@code false}.
+	 * This increases the memory usage of the search if set to {@code true}.
 	 * @param set
 	 */
 	public void expectIncorrectBounds(boolean set) {
 		expectIncorrectBounds = set;
 	}
+	/**
+	 * @param set if {@code true}, applies shallow irrelevance stopping to the search.
+	 */
 	public void useIrrelevanceStopping(boolean set) {
 		variant.irrelevanceStopping = set;
 	}
+	/**
+	 * @param set if {@code true}, applies shallow and deep irrelevance stopping to the search.
+	 */
 	public void useDeepIrrelevance(boolean set) {
 		variant.deepIrrelevance = set;
 		variant.irrelevanceStopping |= set;
 	}
+	/**
+	 * Irrelevance stopping, if applied to all levels of the search, will also apply 
+	 * deep irrelevance stopping (if this has been enabled by another method) to all
+	 * levels of the search.
+	 * @param set if {@code true}, applies shallow irrelevance stopping to the search for all levels
+	 * of the search. This is specifically for the use of higher level search like B*-cubed or above.
+	 */
 	public void useIrrelevanceStoppingAtAllLevels(boolean set) {
 		variant.applyIrrelevanceStoppingToL3 = set;
 		variant.irrelevanceStopping |= set;
