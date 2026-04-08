@@ -17,14 +17,15 @@ import static gametree.MetricKeeper.*;
  * This implements B*²-max with the `dispose all' bounds preservation technique and no shallow or deep irrelevance.
  * <br><br>
  * The additional bounds preservation techniques and the shallow and deep irrelevance stop conditions are 
- * currently implemented in a different branch, and have not been thoroughly tested. Therefore they have
+ * currently implemented on a different branch, and have not been thoroughly tested. Therefore they have
  * not been included here as of now.
  */
 public class BstarSquaredSimpleMax implements SearchAlgorithm {
 
 	/**
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
-	 * @param L2_strategyFunction The strategy function to be used for L2 search.
+	 * The first evaluation function provided corresponds to the function used by the first-level search.
+	 * The number of strategy functions provided corresponds to the number of levels of search, with a minimum of two.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StrategyFunction... strategyFunctions) {
 		for (var s : strategyFunctions)
@@ -37,8 +38,8 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
+	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StrategyFunction L1_strategyFunction) {
 		this(L1_strategyFunction, StrategyFunction.PROVEBEST);
