@@ -22,7 +22,7 @@ import utils.Probability;
 /**
  * This class represents an abstract GameTreeNode which stores game positions 
  * of a game tree along with the structure of the tree itself through 
- * {@link #children(MetricKeeper)} and {@link #parent()} relations.
+ * {@link #children(MetricKeeper...)} and {@link #parent()} relations.
  * <p>
  * The GameTree logic is kept separate from the {@link IGamePosition} logic 
  * to allow any kind of architecture to be more easily applied to any kind 
@@ -259,7 +259,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * @param metrics One or more {@link MetricKeeper} objects to keep track of node evaluations and expansions 
 	 * made by this {@link GameTreeNode} through this method. Or zero if there is no need 
 	 * to keep track of these metrics.
-	 * @return The depth from which the {@link #upperbound(MetricKeeper)} has been backed-up. 
+	 * @return The depth from which the {@link #upperbound(MetricKeeper...)} has been backed-up. 
 	 * Or {@code 0} if it has not yet been updated from the initial {@link IGamePosition#upperbound()} 
 	 * value.
 	 */
@@ -281,7 +281,7 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
 	 * @param metrics One or more {@link MetricKeeper} objects to keep track of node evaluations and expansions 
 	 * made by this {@link GameTreeNode} through this method. Or zero if there is no need 
 	 * to keep track of these metrics.
-	 * @return The depth from which the {@link #lowerbound(MetricKeeper)} has been backed-up. 
+	 * @return The depth from which the {@link #lowerbound(MetricKeeper...)} has been backed-up. 
 	 * Or {@code 0} if it has not yet been updated from the initial {@link IGamePosition#lowerbound()} 
 	 * value.
 	 */
@@ -499,8 +499,8 @@ public abstract class GameTreeNode<N extends GameTreeNode<N,P>, P extends IGameP
      *
      * @param best           the best node
      * @param secondbest     the second-best node
-     * @param bestIndex      the index of the best node in the input collection
-     * @param secondBestIndex the index of the second-best node in the input collection
+     * @param bestindex      the index of the best node in the input collection
+     * @param best2index 	 the index of the second-best node in the input collection
      */
 	public record Result<N extends GameTreeNode<N,P>, P extends IGamePosition<P>>(N best, N secondbest, int bestindex, int best2index) {
 		/**

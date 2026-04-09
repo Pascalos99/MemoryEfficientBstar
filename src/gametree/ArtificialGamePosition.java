@@ -194,7 +194,7 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 	 */
 	private long upper;
 	/**
-	 * The depth of this node as per the description of {@link IGamePosition#depth()}.
+	 * The depth of this node, where the root node is depth {@code 0} and the children of a node have a relative depth of {@code +1}.
 	 */
 	private long depth;
 	
@@ -210,13 +210,13 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 	
 	/**
 	 * Gives the root node of the tree characterised by the given parameters.
-	 * @param adversarial				{@link #adversarial}, denotes whether this tree is an adversarial tree or not
-	 * @param initial_seed 				{@link #initial_seed}, denotes a unique tree generation sequence
-	 * @param width 					{@link #width}, has to be greater than or equal to 2
-	 * @param initial_range				{@link #initial_range}, has to be greater than 0
-	 * @param num_alts 					{@link #num_alts}, has to be greater than or equal to 2
-	 * @param growth_factor 			{@link #growth_factor}, has to be greater than 0
-	 * @param force_relevance_chance 	{@link #force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
+	 * @param adversarial				{@link Settings#adversarial}, denotes whether this tree is an adversarial tree or not
+	 * @param initial_seed 				{@link Settings#initial_seed}, denotes a unique tree generation sequence
+	 * @param width 					{@link Settings#width}, has to be greater than or equal to 2
+	 * @param initial_range				{@link Settings#initial_range}, has to be greater than 0
+	 * @param num_alts 					{@link Settings#num_alts}, has to be greater than or equal to 2
+	 * @param growth_factor 			{@link Settings#growth_factor}, has to be greater than 0
+	 * @param force_relevance_chance 	{@link Settings#force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
 	 */
 	public ArtificialGamePosition(boolean adversarial, long initial_seed, int width, long initial_range, int num_alts, double growth_factor, double force_relevance_chance) {
 		this(new Settings(adversarial, initial_seed, width, initial_range, num_alts, growth_factor, force_relevance_chance));
@@ -481,7 +481,7 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 	 * @param x some value
 	 * @param y another value
 	 * @return {@code x + y} unless overflow or underflow occurs, in which case 
-	 *  {@link Long.MAX_VALUE} or {@link Long.MIN_VALUE} respectively.
+	 *  {@link Long#MAX_VALUE} or {@link Long#MIN_VALUE} respectively.
 	 */
 	public static long safeSum(long x, long y) {
 		long z = x + y;

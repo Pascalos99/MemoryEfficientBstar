@@ -69,17 +69,17 @@ public interface StrategyFunction {
 	
 	// Berliner's Heuristic Approaches:
 	
-	/** Berliner's {@link #CRITERIUM_D(int)}, considering 1 alternative*/
+	/** Berliner's depth-based D-criterium, considering 1 alternative*/
 	public static Deterministic B_2D = CRITERIUM_D_or_R(2, false);
-	/** Berliner's {@link #CRITERIUM_D(int)}, considering 2 alternatives*/
+	/** Berliner's depth-based D-criterium, considering 2 alternatives*/
 	public static Deterministic B_3D = CRITERIUM_D_or_R(3, false);
-	/** Berliner's {@link #CRITERIUM_D(int)}, considering all alternatives*/
+	/** Berliner's depth-based D-criterium, considering all alternatives*/
 	public static Deterministic B_AD = CRITERIUM_D_or_R(0, false);
-	/** Berliner's {@link #CRITERIUM_R(int)}, considering 1 alternative*/
+	/** Berliner's depth- and range-based R-criterium, considering 1 alternative*/
 	public static Deterministic B_2R = CRITERIUM_D_or_R(2, true);
-	/** Berliner's {@link #CRITERIUM_R(int)}, considering 2 alternatives*/
+	/** Berliner's depth- and range-based R-criterium, considering 2 alternatives*/
 	public static Deterministic B_3R = CRITERIUM_D_or_R(3, true);
-	/** Berliner's {@link #CRITERIUM_R(int)}, considering all alternatives */
+	/** Berliner's depth- and range-based R-criterium, considering all alternatives */
 	public static Deterministic B_AR = CRITERIUM_D_or_R(0, true);
 
 	public static Deterministic P_2M1 = BY_SUBTREE_MAXSIZE(2, true, 1);

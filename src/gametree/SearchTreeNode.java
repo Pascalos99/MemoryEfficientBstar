@@ -215,27 +215,18 @@ public class SearchTreeNode<P extends IGamePosition<P>> extends GameTreeNode<Sea
 	}
 	
 	/**
-	 * Enables incorrect-bounds protection for the pruning of irrelevant children nodes in the entire tree. 
+	 * If set to {@code true}, enables incorrect-bounds protection for the pruning of irrelevant children nodes in the entire tree. 
 	 * This ensures that nodes pruned by {@link #enableIrrelevancePruning(long)} are still kept in memory, 
 	 * but only their children are removed. This ensures the node can still be revisited if it becomes relevant 
 	 * again later (due to the evaluation function having incorrect bounds). It is important to note that this 
 	 * may result in a {@code null} error if {@link #enablePositionPruning(long)} is enabled. 
-	 * Can be disabled by calling {@link #disableIncorrectBoundsProtection()}.
+	 * Can be disabled by calling setting to {@code false}. Defaults to {@code false}.
 	 * <p>
 	 * This does not retroactively modify the tree in any way. 
-	 * @param minimum_depth_to_prune the minimum depth at which nodes will be pruned. To preserve node structure at 
-	 * the children of the root, set this value to {@code 2} or higher.
+	 * @param set the value to set to
 	 */
-	public void enableIncorrectBoundsProtection() {
-		settings.prune_irrelevance_light = true;
-	}
-	
-	/**
-	 * Disables the function enabled by {@link #enableIncorrectBoundsProtection()}. Does not retroactively modify 
-	 * the tree in any way.
-	 */
-	public void disableIncorrectBoundsProtection() {
-		settings.prune_irrelevance_light = false;
+	public void enableIncorrectBoundsProtection(boolean set) {
+		settings.prune_irrelevance_light = set;
 	}
 
 	@Override

@@ -99,9 +99,10 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 		/**
 		 * @param adversarial				{@link #adversarial}, denotes whether this tree is an adversarial tree or not
 		 * @param initial_seed 				{@link #initial_seed}, denotes a unique tree generation sequence
-		 * @param width 					{@link #maxWidth}, has to be greater than or equal to 2
+		 * @param maxWidth 					{@link #maxWidth}, maximum branching factor of the tree, has to be greater than or equal to 2
+		 * @param width						{@link #width}, a generator for providing the number of children at each node
 		 * @param initial_range				{@link #initial_range}, has to be greater than 0
-		 * @param num_alts 					{@link #num_alts}, has to be greater than or equal to 2
+		 * @param distribution 				{@link #distribution}, a generator providing the bounds of children at each node
 		 * @param growth_factor 			{@link #growth_factor}, has to be greater than 0
 		 * @param force_relevance_chance 	{@link #force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
 		 */
@@ -193,13 +194,14 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 	
 	/**
 	 * Gives the root node of the tree characterised by the given parameters.
-	 * @param adversarial				{@link #adversarial}, denotes whether this tree is an adversarial tree or not
-	 * @param initial_seed 				{@link #initial_seed}, denotes a unique tree generation sequence
-	 * @param width 					{@link #maxWidth}, has to be greater than or equal to 2
-	 * @param initial_range				{@link #initial_range}, has to be greater than 0
-	 * @param num_alts 					{@link #num_alts}, has to be greater than or equal to 2
-	 * @param growth_factor 			{@link #growth_factor}, has to be greater than 0
-	 * @param force_relevance_chance 	{@link #force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
+	 * @param adversarial				{@link Settings#adversarial}, denotes whether this tree is an adversarial tree or not
+	 * @param initial_seed 				{@link Settings#initial_seed}, denotes a unique tree generation sequence
+	 * @param maxWidth 					{@link Settings#maxWidth}, maximum branching factor of the tree, has to be greater than or equal to 2
+	 * @param width						{@link Settings#width}, a generator for providing the number of children at each node
+	 * @param initial_range				{@link Settings#initial_range}, has to be greater than 0
+	 * @param distribution 				{@link Settings#distribution}, a generator providing the bounds of children at each node
+	 * @param growth_factor 			{@link Settings#growth_factor}, has to be greater than 0
+	 * @param force_relevance_chance 	{@link Settings#force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
 	 */
 	public VariantAGP(boolean adversarial, long initial_seed, int maxWidth, Generator.Width width, long initial_range, Generator.Bounds distribution, double growth_factor, double force_relevance_chance) {
 		this(new Settings(adversarial, initial_seed, maxWidth, width, initial_range, distribution, growth_factor, force_relevance_chance));
