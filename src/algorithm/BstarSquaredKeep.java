@@ -55,7 +55,7 @@ public class BstarSquaredKeep implements SearchAlgorithm {
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for the second-level search.
 	 * @param extraStopCondition An additional stop condition for the search
 	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
@@ -63,7 +63,7 @@ public class BstarSquaredKeep implements SearchAlgorithm {
 		this(extraStopCondition, L1_strategyFunction, StrategyFunction.PROVEBEST);
 	}
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for the second-level search.
 	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredKeep(StrategyFunction L1_strategyFunction) {
@@ -190,7 +190,7 @@ public class BstarSquaredKeep implements SearchAlgorithm {
 	 * Note that shallow irrelevance is automatically set to {@code true} if any of shallow irrelevance or bonus evaluations are also enabled,
 	 * as they require shallow irrelevance to function.
 	 * <br><br>
-	 * The 'never discard' option defaults to {@code true} in the overloaded variant of this method: {@link #setAsKeepLazy(boolean, boolean)}.
+	 * The 'never discard' option defaults to {@code true} in the overloaded variant of this method: {@link #setAsKeepLazy(boolean, boolean, boolean)}.
 	 * If set to {@code false}, the second-level search may at times be re-executed to expand a node, which appears to have a major impact on performance.
 	 * @param bonusEvals set to {@code true} to perform additional evaluations to provide extra information to irrelevance stopping.
 	 * @param shallowIrrelevance set to {@code true} to apply shallow irrelevance
