@@ -18,8 +18,8 @@ import java.util.regex.Pattern;
  * because they are independent from the structure of the tree and depend 
  * not only on the algorithm used, but also on the {@link GameTreeNode} 
  * implementation. Therefore, during exploration of the game tree, calls 
- * of {@link GameTreeNode#children(MetricKeeper)}, {@link GameTreeNode#lowerbound(MetricKeeper)}, 
- * and {@link GameTreeNode#upperbound(MetricKeeper)} may increment the 
+ * of {@link GameTreeNode#children(MetricKeeper...)}, {@link GameTreeNode#lowerbound(MetricKeeper...)}, 
+ * and {@link GameTreeNode#upperbound(MetricKeeper...)} may increment the 
  * counters for the provided {@link MetricKeeper} object. The totals for 
  * these metrics can be obtained at any time.
  * <p>
@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  * It is good practice for {@link GameTreeNode} implementations to call 
  * {@link #incrementEvaluations()} whenever either {@link IGamePosition#upperbound()} 
  * or {@link IGamePosition#lowerbound()} are called. This is to keep maximum accuracy 
- * in the described metric. Some implementations of {@link IGamePositions} may 
+ * in the described metric. Some implementations of {@link IGamePosition} may 
  * compute both bounds at the same time and simply store this metric for when it 
  * is requested. In those cases, the final {@link #evaluations()} metric may be 
  * divided by {@code 2} to account for this. It is also recommended, for this reason, 
@@ -250,8 +250,8 @@ public class MetricKeeper {
 	}
 	/**
 	 * Increments the number of expansions of all {@code MetricKeeper} objects provided by {@code 0} 
-	 * or {@code evaluationsIncrement} if it is positive.
-	 * @param evaluationsIncrement the value with which to increment the number of expansions
+	 * or {@code expansionsIncrement} if it is positive.
+	 * @param expansionsIncrement the value with which to increment the number of expansions
 	 * @param metrics the {@link MetricKeeper} objects to update
 	 */
 	public static void incrementExpansions(long expansionsIncrement, MetricKeeper... metrics) {

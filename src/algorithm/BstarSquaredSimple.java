@@ -38,7 +38,7 @@ public class BstarSquaredSimple implements SearchAlgorithm {
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for the second-level search.
 	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredSimple(StrategyFunction L1_strategyFunction) {

@@ -87,7 +87,7 @@ public class Probability {
 	 * Converts a CDF P(X ≤ t) to the respective distribution's PMF P(X = t).
 	 * <p>
 	 * Assumes that the given array spans the entire domain of the distribution.
-	 * @param cdf the Cumulative Distribution Function (CDF)
+	 * @param CDF the Cumulative Distribution Function (CDF)
 	 * @return the Probability Mass Function (PMF)
 	 */
 	public static double[] cdfToPMF(double[] CDF) {

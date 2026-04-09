@@ -9,14 +9,14 @@ import java.util.Random;
 import static gametree.ArtificialGamePosition.*;
 
 /**
- * Represents a game position in an artificial game tree. This class models both adversarial 
- * and non-adversarial game trees with a fixed branching factor and integer valued nodes.
+ * Represents a game position in a variant artificial game tree. This class models both adversarial 
+ * and non-adversarial game trees with a variable branching factor and integer valued nodes.
  * Each node is uniquely identified by its {@link #name}, which is 
  * derived from its position in the tree.
  * 
  * <p>
  * The tree is characterised by a {@link Settings} object, which defines parameters such as 
- * the branching factor ({@link Settings#maxWidth}), growth factor ({@link Settings#growth_factor}), and initial 
+ * the maximum branching factor ({@link Settings#maxWidth}), growth factor ({@link Settings#growth_factor}), and initial 
  * range ({@link Settings#initial_range}). Nodes are generated deterministically based on these 
  * settings and a pseudo-random number generator seed, ensuring reproducibility of the tree structure.
  * 
@@ -24,14 +24,46 @@ import static gametree.ArtificialGamePosition.*;
  * This class is designed for use in scenarios where deterministic and reproducible game trees 
  * are required, such as in testing game tree search algorithms or simulations.
  * 
+ * <p>
+ * Based on {@link ArtificialGamePosition}, this class can be used to model the same trees, but is a generalisation 
+ * which can generate more complex trees as well. The number of children at each node can be determined by a function, 
+ * which allows for more complexity and additional rules for tree structure. Additionally, the bounds of generated nodes
+ * are also provided by a function, which also allows for more flexibility, complexity, and additional rules. See the 
+ * {@link Generator} class for various examples of generators that can be used, or make your own for more flexibility.
+ * 
  * @author Pascal Anema
  * @version 1.0
  */
 public class VariantAGP implements IGamePosition<VariantAGP> {
 	
+	/**
+	 * A record holding the information provided to {@link Generator} functions for determining the bounds of a generated child node.
+	 * @param maximising This is {@code true} if the parent node is maximising and {@code false} if the parent node is minimising.
+	 * @param lowerbound The lowest lower bound the generated values may take, this already accounts for the {@link Settings#growth_factor} of the tree.
+	 * @param relevancebound The parent's lower bound when it is maximising, or the parents upper bound when it is minimising.
+	 * @param upperbound The greatest upper bound the generated values may take, this already accounts for the {@link Settings#growth_factor} of the tree.
+	 * @param depth The depth of the parent node of the generated children.
+	 * @param forceRelevance This is {@code true} if the {@link Settings#force_relevance_chance} was triggered for this child node. If this value is provided as 
+	 * {@code false}, the generation should be performed as usual.
+	 * <p>
+	 * Whether this value is {@code true} or {@code false} does not alter the provided values for the {@code lowerbound} and {@code upperbound}. However, the 
+	 * expectation for implementation is that, if {@code forceRelevance} is {@code true}, then the minimum and maximum of the returned values both lie
+	 * within the range of {@link #relevantL()} to {@link #relevantU()}. This can be ignored, but will result in the {@link Settings#force_relevance_chance} parameter
+	 * losing its function.
+	 */
 	public static record NodeInfo(boolean maximising, long lowerbound, long relevancebound, long upperbound, long depth, boolean forceRelevance) {
+		/**
+		 * The relevant lower bound is the lower bound of the parent node.
+		 * At least one of the child nodes generated at every parent should have a lower bound equal to or above the relevant lower bound.
+		 * @return The relevant lower bound for this node
+		 */
 		public long relevantL() {
 			return maximising? relevancebound : lowerbound; }
+		/**
+		 * The relevant upper bound is the upper bound of the parent node.
+		 * At least one of the child nodes generated at every parent should have an upper bound equal to or below the relevant upper bound.
+		 * @return The relevant upper bound for this node
+		 */
 		public long relevantU() {
 			return maximising? upperbound : relevancebound; }
 	}
@@ -50,7 +82,7 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 		 */
 		public final boolean adversarial;
 		/**
-		 * The pseudo-random number generator seed of the first node in the tree. Dictates the 
+		 * The pseudo-random number generator seed of the first node in the tree (<b>S₀</b>). Dictates the 
 		 * unique generation of the entire tree. A tree with the same settings, including the 
 		 * same initial seed, will always have the same structure no matter the order of 
 		 * expansion/exploration.
@@ -67,7 +99,7 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 		 */
 		public final Generator.Width width;
 		/**
-		 * Initial range at the root node of this tree. The root node will start with lower- and upper-bounds 
+		 * Initial range <b>R</b> at the root node of this tree. The root node will start with lower- and upper-bounds 
 		 * {@code 0} and {@code initial_range}. Has to be greater than {@code 0} for the tree to be non-trivial.
 		 */
 		public final long initial_range;
@@ -88,8 +120,8 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 		 */
 		public final double growth_factor;
 		/**
-		 * Parameter <b>f</b>, relevance chance, only relevant when the growth factor {@code g} 
-		 * is greater than 1. Enforces that, for a fraction {@code f} of child nodes of each parent, 
+		 * Parameter <b>r</b>, relevance chance, only relevant when the growth factor {@code g} 
+		 * is greater than 1. Enforces that, for a fraction {@code r} of child nodes of each parent, 
 		 * the child bound overlaps with the parent bound. Such that either the upper or 
 		 * lower bound is forced to be generated within the parent bound, depending on whether 
 		 * the node is minimising or maximising respectively.
@@ -99,9 +131,10 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 		/**
 		 * @param adversarial				{@link #adversarial}, denotes whether this tree is an adversarial tree or not
 		 * @param initial_seed 				{@link #initial_seed}, denotes a unique tree generation sequence
-		 * @param width 					{@link #maxWidth}, has to be greater than or equal to 2
+		 * @param maxWidth 					{@link #maxWidth}, maximum branching factor of the tree, has to be greater than or equal to 2
+		 * @param width						{@link #width}, a generator for providing the number of children at each node
 		 * @param initial_range				{@link #initial_range}, has to be greater than 0
-		 * @param num_alts 					{@link #num_alts}, has to be greater than or equal to 2
+		 * @param distribution 				{@link #distribution}, a generator providing the bounds of children at each node
 		 * @param growth_factor 			{@link #growth_factor}, has to be greater than 0
 		 * @param force_relevance_chance 	{@link #force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
 		 */
@@ -130,6 +163,10 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 			this.force_relevance_chance = force_relevance_chance;
 		}
 		
+		/**
+		 * Creates a new {@link VariantAGP} object representing a unique tree defined by the parameters set in this {@link Settings} object.
+		 * @return A new artificial game tree based on the parameters of this object.
+		 */
 		public VariantAGP getTree() {
 			return new VariantAGP(this);
 		}
@@ -193,13 +230,14 @@ public class VariantAGP implements IGamePosition<VariantAGP> {
 	
 	/**
 	 * Gives the root node of the tree characterised by the given parameters.
-	 * @param adversarial				{@link #adversarial}, denotes whether this tree is an adversarial tree or not
-	 * @param initial_seed 				{@link #initial_seed}, denotes a unique tree generation sequence
-	 * @param width 					{@link #maxWidth}, has to be greater than or equal to 2
-	 * @param initial_range				{@link #initial_range}, has to be greater than 0
-	 * @param num_alts 					{@link #num_alts}, has to be greater than or equal to 2
-	 * @param growth_factor 			{@link #growth_factor}, has to be greater than 0
-	 * @param force_relevance_chance 	{@link #force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
+	 * @param adversarial				{@link Settings#adversarial}, denotes whether this tree is an adversarial tree or not
+	 * @param initial_seed 				{@link Settings#initial_seed}, denotes a unique tree generation sequence
+	 * @param maxWidth 					{@link Settings#maxWidth}, maximum branching factor of the tree, has to be greater than or equal to 2
+	 * @param width						{@link Settings#width}, a generator for providing the number of children at each node
+	 * @param initial_range				{@link Settings#initial_range}, has to be greater than 0
+	 * @param distribution 				{@link Settings#distribution}, a generator providing the bounds of children at each node
+	 * @param growth_factor 			{@link Settings#growth_factor}, has to be greater than 0
+	 * @param force_relevance_chance 	{@link Settings#force_relevance_chance}, has to be greater than or equal to 0 and smaller than or equal to 1
 	 */
 	public VariantAGP(boolean adversarial, long initial_seed, int maxWidth, Generator.Width width, long initial_range, Generator.Bounds distribution, double growth_factor, double force_relevance_chance) {
 		this(new Settings(adversarial, initial_seed, maxWidth, width, initial_range, distribution, growth_factor, force_relevance_chance));

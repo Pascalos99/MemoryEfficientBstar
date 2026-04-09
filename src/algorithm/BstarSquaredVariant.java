@@ -30,7 +30,7 @@ public class BstarSquaredVariant implements SearchAlgorithm {
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for L2 search.
 	 * @param L1_strategyFunction The strategy function to be used for L1 search.
 	 */
 	public BstarSquaredVariant(StrategyFunction L1_strategyFunction) {
