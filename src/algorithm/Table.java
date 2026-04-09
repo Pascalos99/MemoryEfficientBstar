@@ -18,7 +18,8 @@ public class Table {
 	private long softCollisions, hardCollisions, timesRetrieved, numStored;
 	
 	/**
-	 * @param num_bits_per_key Determines the size of this table.
+	 * Creates a transposition table with a specified size.
+	 * @param keySize Determines the size of this table.
 	 * Typically good between 18 and 25, depending on available memory.
 	 * For practical reasons, this is capped at 30 and can not be less than 0.
 	 */

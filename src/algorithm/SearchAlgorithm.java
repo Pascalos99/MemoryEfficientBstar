@@ -12,15 +12,12 @@ import gametree.MetricKeeper;
 public interface SearchAlgorithm {
 
 	/**
-	 * Initiates the search of the provided game tree with a given time limit and
-	 * spatial limit.
-	 * 
-	 * @param <P>         The type of {@link IGamePosition} which represents the
-	 *                    type of game to be searched
-	 * @param root        root of the tree to be searched
-	 * @param time_limit  maximum time spent in the algorithm
-	 * @param space_limit maximum node expansions, evaluations, and nodes saved in
-	 *                    memory used by the algorithm
+	 * Initiates the search of the provided game tree with a given time limit and spatial limit.
+	 * @param <P> The type of {@link IGamePosition} which represents the type of game to be searched
+	 * @param root root of the tree to be searched
+	 * @param time_limit maximum time spent in the algorithm
+	 * @param space_limit maximum node expansions, evaluations, and nodes saved in memory used by the algorithm
+	 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 	 * @return result from the search
 	 */
 	<P extends IGamePosition<P>> SearchResult<?, P> search(P root, Duration time_limit, Limits space_limit,
@@ -28,11 +25,12 @@ public interface SearchAlgorithm {
 
 	/**
 	 * Initiates the search of the provided game tree without time limits.
-	 * 
+	 *
 	 * @param <P>         The type of {@link IGamePosition} which represents the
 	 *                    type of game to be searched
 	 * @param root        root of the tree to be searched
 	 * @param space_limit the spatial limits on this search
+	 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 	 * @return result from the search
 	 */
 	default <P extends IGamePosition<P>> SearchResult<?, P> search(P root, Limits space_limit,
@@ -44,11 +42,12 @@ public interface SearchAlgorithm {
 
 	/**
 	 * Initiates the search of the provided game tree without spatial limits.
-	 * 
+	 *
 	 * @param <P>        The type of {@link IGamePosition} which represents the type
 	 *                   of game to be searched
 	 * @param root       root of the tree to be searched
 	 * @param time_limit maximum time spent in the algorithm
+	 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 	 * @return result from the search
 	 */
 	default <P extends IGamePosition<P>> SearchResult<?, P> search(P root, Duration time_limit,
@@ -59,10 +58,11 @@ public interface SearchAlgorithm {
 	/**
 	 * Initiates the search of the provided game tree without time or spatial
 	 * limits.
-	 * 
+	 *
 	 * @param <P>  The type of {@link IGamePosition} which represents the type of
 	 *             game to be searched
 	 * @param root root of the tree to be searched
+	 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 	 * @return result from the search
 	 */
 	default <P extends IGamePosition<P>> SearchResult<?, P> search(P root, MetricKeeper... metrics) {
@@ -78,17 +78,13 @@ public interface SearchAlgorithm {
 	 */
 	public static interface SearchWithTree extends SearchAlgorithm {
 		/**
-		 * Initiates the search of the provided game tree with a given time limit and
-		 * spatial limit.
-		 * 
-		 * @param <P>         The type of {@link IGamePosition} which represents the
-		 *                    type of game to be searched
-		 * @param <N>         The type of {@link GameTreeNode} which is used for
-		 *                    executing the search
-		 * @param root        root of the tree to be searched
-		 * @param time_limit  maximum time spent in the algorithm
-		 * @param space_limit maximum node expansions, evaluations, and nodes saved in
-		 *                    memory used by the algorithm
+		 * Initiates the search of the provided game tree with a given time limit and spatial limit.
+		 * @param <P> The type of {@link IGamePosition} which represents the type of game to be searched
+		 * @param <N> The type of {@link GameTreeNode} which is used for executing the search
+		 * @param root root of the tree to be searched
+		 * @param time_limit maximum time spent in the algorithm
+		 * @param space_limit maximum node expansions, evaluations, and nodes saved in memory used by the algorithm
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		<N extends GameTreeNode<N, P>, P extends IGamePosition<P>> SearchResult<N, P> searchWithTree(N root,
@@ -96,13 +92,14 @@ public interface SearchAlgorithm {
 
 		/**
 		 * Initiates the search of the provided game tree without time limits.
-		 * 
+		 *
 		 * @param <N>         The type of {@link GameTreeNode} which is used for
 		 *                    executing the search
 		 * @param <P>         The type of {@link IGamePosition} which represents the
 		 *                    type of game to be searched
 		 * @param root        root of the tree to be searched
 		 * @param space_limit the spatial limits on this search
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		default <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> SearchResult<N, P> searchWithTree(N root,
@@ -114,13 +111,14 @@ public interface SearchAlgorithm {
 
 		/**
 		 * Initiates the search of the provided game tree without spatial limits.
-		 * 
+		 *
 		 * @param <N>        The type of {@link GameTreeNode} which is used for
 		 *                   executing the search
 		 * @param <P>        The type of {@link IGamePosition} which represents the type
 		 *                   of game to be searched
 		 * @param root       root of the tree to be searched
 		 * @param time_limit maximum time spent in the algorithm
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		default <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> SearchResult<N, P> searchWithTree(N root,
@@ -131,12 +129,13 @@ public interface SearchAlgorithm {
 		/**
 		 * Initiates the search of the provided game tree without time or spatial
 		 * limits.
-		 * 
+		 *
 		 * @param <N>  The type of {@link GameTreeNode} which is used for executing the
 		 *             search
 		 * @param <P>  The type of {@link IGamePosition} which represents the type of
 		 *             game to be searched
 		 * @param root root of the tree to be searched
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		default <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> SearchResult<N, P> searchWithTree(N root,
@@ -148,7 +147,7 @@ public interface SearchAlgorithm {
 
 		/**
 		 * defaults to {@code false}
-		 * 
+		 *
 		 * @param set
 		 */
 		public void expectIncorrectBounds(boolean set);
@@ -161,16 +160,13 @@ public interface SearchAlgorithm {
 	 */
 	public static interface SearchWithTable extends SearchAlgorithm {
 		/**
-		 * Initiates the search of the provided game tree with a given time limit and
-		 * spatial limit.
-		 * 
-		 * @param <P>         The type of {@link IGamePosition} which represents the
-		 *                    type of game to be searched
-		 * @param root        root of the tree to be searched
-		 * @param table       table to use during search, can be non-empty
-		 * @param time_limit  maximum time spent in the algorithm
-		 * @param space_limit maximum node expansions, evaluations, and nodes saved in
-		 *                    memory used by the algorithm
+		 * Initiates the search of the provided game tree with a given time limit and spatial limit.
+		 * @param <P> The type of {@link IGamePosition} which represents the type of game to be searched
+		 * @param root root of the tree to be searched
+		 * @param table table to use during search, can be non-empty
+		 * @param time_limit maximum time spent in the algorithm
+		 * @param space_limit maximum node expansions, evaluations, and nodes saved in memory used by the algorithm
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		<P extends IGamePosition<P>> SearchResult<?, P> search(P root, Table table, Duration time_limit,
@@ -178,12 +174,13 @@ public interface SearchAlgorithm {
 
 		/**
 		 * Initiates the search of the provided game tree without time limits.
-		 * 
+		 *
 		 * @param <P>         The type of {@link IGamePosition} which represents the
 		 *                    type of game to be searched
 		 * @param root        root of the tree to be searched
 		 * @param table       table to use during search, can be non-empty
 		 * @param space_limit the spatial limits on this search
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		default <P extends IGamePosition<P>> SearchResult<?, P> search(P root, Table table, Limits space_limit,
@@ -195,12 +192,13 @@ public interface SearchAlgorithm {
 
 		/**
 		 * Initiates the search of the provided game tree without spatial limits.
-		 * 
+		 *
 		 * @param <P>        The type of {@link IGamePosition} which represents the type
 		 *                   of game to be searched
 		 * @param root       root of the tree to be searched
 		 * @param table      table to use during search, can be non-empty
 		 * @param time_limit maximum time spent in the algorithm
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		default <P extends IGamePosition<P>> SearchResult<?, P> search(P root, Table table, Duration time_limit,
@@ -211,11 +209,12 @@ public interface SearchAlgorithm {
 		/**
 		 * Initiates the search of the provided game tree without time or spatial
 		 * limits.
-		 * 
+		 *
 		 * @param <P>   The type of {@link IGamePosition} which represents the type of
 		 *              game to be searched
 		 * @param root  root of the tree to be searched
 		 * @param table table to use during search, can be non-empty
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		default <P extends IGamePosition<P>> SearchResult<?, P> search(P root, Table table, MetricKeeper... metrics) {
@@ -225,16 +224,13 @@ public interface SearchAlgorithm {
 		}
 
 		/**
-		 * Initiates the search of the provided game tree with a given time limit and
-		 * spatial limit. Also creates a table to search with, with the maximum possible
-		 * size according to the spatial limit and available memory.
-		 * 
-		 * @param <P>         The type of {@link IGamePosition} which represents the
-		 *                    type of game to be searched
-		 * @param root        root of the tree to be searched
-		 * @param time_limit  maximum time spent in the algorithm
-		 * @param space_limit maximum node expansions, evaluations, and nodes saved in
-		 *                    memory used by the algorithm
+		 * Initiates the search of the provided game tree with a given time limit and spatial limit.
+		 * Also creates a table to search with, with the maximum possible size according to the spatial limit and available memory.
+		 * @param <P> The type of {@link IGamePosition} which represents the type of game to be searched
+		 * @param root root of the tree to be searched
+		 * @param time_limit maximum time spent in the algorithm
+		 * @param space_limit maximum node expansions, evaluations, and nodes saved in memory used by the algorithm
+		 * @param metrics an array of {@link MetricKeeper} objects to keep track of evaluations, expansions, and node storage performed during the search, can be empty
 		 * @return result from the search
 		 */
 		@Override
@@ -245,18 +241,12 @@ public interface SearchAlgorithm {
 	}
 
 	/**
-	 * Encapsulates the results and metrics captured from an adversarial tree
-	 * search.
-	 * 
-	 * @param numEvaluated total number of times a node is evaluated during the
-	 *                     search
-	 * @param numExpanded  total number of times a node is expanded during the
-	 *                     search
-	 * @param root         a game-tree node at the root position of the original
-	 *                     tree. This node should at least contain the updated
-	 *                     optimistic and pessimistic values of the root's children
-	 *                     nodes, reflecting the updated values as a result of the
-	 *                     search.
+	 * Encapsulates the results and metrics captured from an adversarial tree search.
+	 * @param root a game-tree node at the root position of the original tree. This node should at least
+	 *        contain the updated optimistic and pessimistic values of the root's children nodes,
+	 *        reflecting the updated values as a result of the search.
+	 * @param metrics a list of metrics to be stored as part of this result. The first {@linkplain MetricKeeper} in the list
+	 *  is considered the "main" metrics representing the result described by this object.
 	 */
 	public static record SearchResult<N extends GameTreeNode<N, P>, P extends IGamePosition<P>>(N root,
 			MetricKeeper... metrics) {
@@ -297,7 +287,7 @@ public interface SearchAlgorithm {
 		 * the proven best value (if the search did not reach separation) as some other
 		 * node may have the least pessimistic value (which may guarantee a better
 		 * value, but may have a lower optimistic value).
-		 * 
+		 *
 		 * @return the position with proven most optimistic value.
 		 */
 		public N mostOptimisticNode() {
@@ -316,7 +306,7 @@ public interface SearchAlgorithm {
 		 * the best minimum return as proven by the search. Some other node may have a
 		 * higher most optimistic value (if the search did not reach separation), but
 		 * may not guarantee the same pessimistic value.
-		 * 
+		 *
 		 * @return the position with the proven least pessimistic value.
 		 */
 		public N leastPessimisticNode() {
@@ -331,15 +321,12 @@ public interface SearchAlgorithm {
 		}
 
 		/**
-		 * Alias for {@link #leastPessimisticPosition()} and
-		 * {@link GameTreeNode#position()}.
-		 * <p>
-		 * the tree is intractable, the best position is the least pessimistic position.
-		 * If the tree is not intractable, {@link #leastPessimisticPosition()} and
-		 * {@link #mostOptimisticPosition()} return the same value: the best position.
-		 * 
-		 * @return the position with the proven least pessimistic value (always) and
-		 *         most optimistic value (if separation was reached during the search).
+		 * Alias for {@link #leastPessimisticNode()} followed by {@link GameTreeNode#position()}.<p> the tree is intractable,
+		 * the best position is the least pessimistic position. If the tree is not
+		 * intractable, {@link #leastPessimisticNode()} and {@link #mostOptimisticNode()}
+		 * return the same value: the best position.
+		 * @return the position with the proven least pessimistic value (always) and most optimistic value (if
+		 * separation was reached during the search).
 		 */
 		public P bestMove() {
 			return leastPessimisticNode().position();
@@ -376,9 +363,10 @@ public interface SearchAlgorithm {
 	}
 
 	/**
-	 * The limits imposed on the search. This is used by B*-squared and by all
-	 * algorithm variants for the implementation of the core experiments and its
-	 * computational and spatial limits.
+	 * The limits imposed on the search. This is used by B*-squared and by all algorithm variants
+	 *  for the implementation of the core experiments and its computational and spatial limits.
+	 *
+	 *  @param limitEvaluations whether to limit the number of evaluations of the run.
 	 */
 	public static record Limits(boolean limitEvaluations, long maxEvaluations, boolean limitExpansions,
 			long maxExpansions, boolean limitMaxNodes, long maxNodes) {
@@ -472,7 +460,7 @@ public interface SearchAlgorithm {
 	 * This method is preferably used scarcely, as the irrelevance of nodes is also
 	 * not considered when expanding the tree. This method works in a depth-first
 	 * fashion without pruning.
-	 * 
+	 *
 	 * @param <N>     Type of {@link GameTreeNode} used for this search
 	 * @param <P>     Type of {@link IGamePosition} which represents the tree to be
 	 *                searched

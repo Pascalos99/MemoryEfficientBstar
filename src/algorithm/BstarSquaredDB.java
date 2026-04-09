@@ -23,8 +23,10 @@ import static gametree.MetricKeeper.*;
 public class BstarSquaredDB implements SearchAlgorithm {
 
 	/**
-	 * @param L1_strategyFunction The strategy function to be used for L1 search.
-	 * @param L2_strategyFunction The strategy function to be used for L2 search.
+	 * The first evaluation function provided corresponds to the function used by the first-level search.
+	 * The number of strategy functions provided corresponds to the number of levels of search, with a minimum of two.
+	 * @param effort_ratio The effort ratio of the Disprove-Best B* engine at the first-level search. Typically set between 1 and 2 divided by the branching factor of the tree.
+	 * @param strategyFunctions The list of strategy functions to apply at the root of a leveled search, including the first-level search.
 	 */
 	public BstarSquaredDB(double effort_ratio, StrategyFunction... strategyFunctions) {
 		for (var s : strategyFunctions)
@@ -38,7 +40,7 @@ public class BstarSquaredDB implements SearchAlgorithm {
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for L2 search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for L2 search.
 	 * @param L1_strategyFunction The strategy function to be used for L1 search.
 	 */
 	public BstarSquaredDB(double effort_ratio, StrategyFunction L1_strategyFunction) {

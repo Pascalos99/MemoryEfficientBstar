@@ -19,7 +19,7 @@ import static gametree.MetricKeeper.*;
  * <br><br>
  * This variant, on the 'extra' branch, implements shallow and deep irrelevance pruning as an additional option
  * when initiating the SearchAlgorithm. The methods for this are {@link #useIrrelevanceStopping(boolean)} and {@link #useDeepIrrelevance(boolean)}.
- * Additionally, it is possible to let irrelevance stopping apply to all levels of search for the generalised multi-level B*^k with 
+ * Additionally, it is possible to let irrelevance stopping apply to all levels of search for the generalised multi-level B*^k with
  * {@link #useIrrelevanceStoppingAtAllLevels(boolean)}. Finally, the {@link #useBonusEvaluations(boolean)} method toggles whether to use
  * additional function evaluations to provide additional information to irrelevance stopping. This option is not thoroughly described in the thesis,
  * but allows B*-squared with 'dispose all' to use irrelevance stopping more effectively, at a slight cost of increased function evaluations.
@@ -41,7 +41,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			this.strategyFunctions = new StrategyFunction[] {strategyFunctions[0], StrategyFunction.PROVEBEST};
 		else
 			this.strategyFunctions = Arrays.copyOf(strategyFunctions, strategyFunctions.length);
-		
+
 		stopCondition = extraStopCondition == null ? StopCondition.NONE : extraStopCondition;
 		variant = new VariantSetting();
 	}
@@ -55,7 +55,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 	}
 
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for the second-level search.
 	 * @param extraStopCondition An additional stop condition for the search
 	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
@@ -63,7 +63,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		this(extraStopCondition, L1_strategyFunction, StrategyFunction.PROVEBEST);
 	}
 	/**
-	 * Uses the default {@link BstarBasic#PROVEBEST} strategy function for the second-level search.
+	 * Uses the default {@link StrategyFunction#PROVEBEST} strategy function for the second-level search.
 	 * @param L1_strategyFunction The strategy function to be used for the first-level search.
 	 */
 	public BstarSquaredSimpleMax(StrategyFunction L1_strategyFunction) {
@@ -72,10 +72,10 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 
 	private final StrategyFunction[] strategyFunctions;
 	private final StopCondition stopCondition;
-	
+
 	private boolean expectIncorrectBounds = false;
 	private VariantSetting variant;
-	
+
 	/**
 	 * Whether or not to expect the evaluation function to provide incorrect bounds. Defaults to {@code false}.
 	 * This increases the memory usage of the search if set to {@code true}.
@@ -98,7 +98,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		variant.irrelevanceStopping |= set;
 	}
 	/**
-	 * Irrelevance stopping, if applied to all levels of the search, will also apply 
+	 * Irrelevance stopping, if applied to all levels of the search, will also apply
 	 * deep irrelevance stopping (if this has been enabled by another method) to all
 	 * levels of the search.
 	 * @param set if {@code true}, applies shallow irrelevance stopping to the search for all levels
@@ -110,7 +110,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 	}
 	/** This setting, if {@code true}, makes B* evaluate nodes with the evaluation
 	 * function before they are explored with a second-level search.
-	 * This allows pruning like shallow and deep irrelevance to work more consistently 
+	 * This allows pruning like shallow and deep irrelevance to work more consistently
 	 * at the cost of some additional evaluations. */
 	public void useBonusEvaluations(boolean set) {
 		variant.bonusEvalsOnCreation = set;
@@ -123,7 +123,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 	public <P extends IGamePosition<P>> SearchResult<?, P>
 			search(P root, Duration time_limit, Limits space_limit, MetricKeeper... metrics) {
 		Instant start = Instant.now();
-		
+
 		MetricKeeper L1_metrics = new MetricKeeper("L"+level+" only");
 		MetricKeeper L2_metrics = new MetricKeeper("L"+(level+1)+" total");
 		MetricKeeper true_metrics = new MetricKeeper("L"+level+" true");
@@ -132,10 +132,10 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		settings.expectIncorrectBounds = expectIncorrectBounds;
 		L1Position<P> L1_root = new L1Position<P>(settings, root, root.lowerbound(), root.upperbound());
 		incrementEvaluations(2, combineArrays(metrics, L1_metrics));
-		
+
 		// at first a tree with irrelevance pruning and position pruning to depth 2 was used.
-		//  but if the node bounds are *not* 100% accurate (as is possible with B*-squared), then 
-		//  irrelevance pruning destroys the structure of the tree in a way that solving the tree may 
+		//  but if the node bounds are *not* 100% accurate (as is possible with B*-squared), then
+		//  irrelevance pruning destroys the structure of the tree in a way that solving the tree may
 		//  become impossible
 		SearchTreeNodeModified<P> L1_tree = new SearchTreeNodeModified<P>(new SearchTreeNode.Settings(false,2,true,2,true), L1_root);
 		L1_tree.setInplaceUpdates(settings.variant.requireModifications());
@@ -153,16 +153,16 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		true_metrics.incrementExpansions(L1_metrics.expansions());
 		return new SearchResult<>(result, combineArrays(new MetricKeeper[] {true_metrics}, combineArrays(new MetricKeeper[] {L1_metrics, L2_metrics}, metrics)));
 	}
-	
+
 	public static class SearchTreeNodeModified<P extends IGamePosition<P>> extends SearchTreeNode<L1Position<P>> {
 		/**
 		 * Change whenever major changes to class structure are made.
 		 * @see 5.6.1 from <a href=https://docs.oracle.com/javase/6/docs/platform/serialization/spec/version.html#6678>docs.oracle.com</a>
 		 */
 		private static final long serialVersionUID = 1L;
-		
+
 		boolean marker = false;
-		
+
 		public SearchTreeNodeModified(Settings settings, SearchTreeNode<L1Position<P>> parent,
 				L1Position<P> position, MetricKeeper... metrics) {
 			super(settings, parent, position, metrics);
@@ -195,13 +195,13 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		final P original;
 		final Settings s;
 		private SearchTreeNodeModified<P> L0_tree = null;
-		
+
 		private boolean evaluated;
 		private double lowerbound, upperbound;
 		private long depthOfLower, depthOfUpper;
-		
+
 		private StopCondition stopping;
-		
+
 		public static class Settings {
 
 			public final int level;
@@ -213,9 +213,9 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			public final MetricKeeper true_metrics;
 			public final MetricKeeper[] other_metrics;
 			public final StrategyFunction[] strategyFunctions;
-			
+
 			public boolean expectIncorrectBounds = false;
-			
+
 			public VariantSetting variant;
 
 			public Settings(int level, Instant start, Limits space_limit, Duration time_limit, MetricKeeper L1_metrics, MetricKeeper L2_metrics, MetricKeeper true_metrics, MetricKeeper[] other_metrics, StrategyFunction[] strategyFunctions, VariantSetting variant) {
@@ -242,7 +242,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			s = settings;
 			this.original = original;
 			evaluated = false;
-			
+
 			stopping = StopCondition.NONE;
 			if (s.variant.irrelevanceStopping && (s.level != 1 || s.variant.applyIrrelevanceStoppingToL3)) {
 				stopping = (n, m) -> {
@@ -261,17 +261,17 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 				};
 			}
 		}
-		
+
 		long getLimit() {
 			long N = s.L1_metrics.maxObservedNodes();
-			
+
 			long M = N;
-			
+
 			if (!s.space_limit.limitMaxNodes()) return M;
 			long res = Math.min(M, s.space_limit.maxNodes() - s.L1_metrics.nodes());
 			return res;
 		}
-		
+
 		public void setTree(SearchTreeNodeModified<P> tree) {
 			L0_tree = tree;
 		}
@@ -282,16 +282,16 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 		 * 3. adjust bounds, this also (a) evaluates all children, and (b) may override previously computed bounds
 		 * On evaluation, start a second-level search centred at that child.
 		 * This can be very costly. How can we improve this?
-		 * if we initialise L2 at evaluation time, and then save the bounds of the L2 root children, 
+		 * if we initialise L2 at evaluation time, and then save the bounds of the L2 root children,
 		 *   then can we reduce the number of expansions coming next?
 		 */
-		
+
 		private boolean irrelevanceCheck(SearchTreeNodeModified<P> parent, double[] cBounds) {
 			double[] pBounds = parent.getBoundsPointer();
 			if (s.variant.bonusEvalsOnCreation && !parent.marker) {
 				// this marker is only used here, to mark whether we need to shadow-update this parent's bounds
 				parent.marker = true;
-				
+
 				// shadow update of parent's bounds:
 				for (var child : parent.children()) {
 					if (child.position() == this) {
@@ -307,7 +307,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 							return true;
 					}
 					double[] lowUpp = child.getBoundsPointer();
-					// we do a sort of "half" shadow-update of the parent's bounds based 
+					// we do a sort of "half" shadow-update of the parent's bounds based
 					//  only on the 'original' evaluation function.
 					if (parent.maximising())
 						pBounds[0] = Math.max(pBounds[0], lowUpp[0] = child.position().originalLowerbound());
@@ -336,9 +336,9 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			}
 			if (!s.variant.deepIrrelevance) return false;
 			// deep irrelevance:
-			
+
 			var pchildren = parent.children();
-			
+
 			if (parent.maximising()) {
 				// lower bound can be raised
 				pBounds[0] = Math.max(pBounds[0], cBounds[0]);
@@ -358,11 +358,11 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			}
 			return irrelevanceCheck(parent.parent(), pBounds);
 		}
-		
+
 		public void evaluate() {
 			if (evaluated) return;
 			MetricKeeper[] metrics = combineArrays(s.other_metrics, s.L2_metrics);
-			
+
 			{
 				SearchAlgorithm b2;
 				if (s.strategyFunctions.length == 2) {
@@ -383,7 +383,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 						s.space_limit.limitEvaluations(), s.space_limit.maxEvaluations() - s.true_metrics.evaluations(),
 						s.space_limit.limitExpansions(), s.space_limit.maxExpansions() - s.L1_metrics.expansions() - s.true_metrics.expansions(),
 						true, getLimit());
-				
+
 				// "metrics" includes L2_metrics, so this node count value of 1 is included in L2_metrics.nodes()
 				adjustNodeCount(1, metrics);
 				var L2_result = b2.search(original, time_remaining, L2_limit, metrics);
@@ -392,7 +392,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 				depthOfLower = L2_result.root().depthOfLower();
 				depthOfUpper = L2_result.root().depthOfUpper();
 				evaluated = true;
-				
+
 				var result_metrics = L2_result.mainMetrics();
 				s.true_metrics.incrementExpansions(result_metrics.expansions());
 				s.true_metrics.incrementEvaluations(result_metrics.evaluations());
@@ -402,7 +402,7 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			adjustNodeCount(-s.L2_metrics.nodes(), metrics);
 			s.true_metrics.setNodeCount(s.L1_metrics.nodes());
 		}
-		
+
 		public Collection<L1Position<P>> next() {
 			return original.next().stream().map(n -> {
 				var res = new L1Position<P>(s, n);
@@ -446,19 +446,19 @@ public class BstarSquaredSimpleMax implements SearchAlgorithm {
 			return String.format(Locale.CANADA, "%s%.1f-%.1f%s<-{%s}", maximising()?"[":"(",lowerbound,upperbound,maximising()?"]":")",original);
 		}
 	}
-	
+
 	public static class VariantSetting {
 		// shallow and deep irrelevance stop-conditions:
 		boolean irrelevanceStopping, deepIrrelevance, applyIrrelevanceStoppingToL3;
-		// modification to expansions such that children in L1 start with 
+		// modification to expansions such that children in L1 start with
 		//  evaluation function values from the original evaluation function
 		//  this helps with allowing the irrelevance stop conditions to work better:
 		boolean bonusEvalsOnCreation;
-		
+
 		boolean requireModifications() {
 			return irrelevanceStopping || bonusEvalsOnCreation;
 		}
-		
+
 		public VariantSetting() {
 			irrelevanceStopping = false;
 			deepIrrelevance = false;

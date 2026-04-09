@@ -6,18 +6,61 @@ import gametree.VariantAGP.NodeInfo;
 
 import static gametree.ArtificialGamePosition.*;
 
+/**
+ * A generator for customising the tree structure of artificial game trees made with the {@link VariantAGP} class.
+ * @param <T> The output type, this is what is being generated
+ * @param <S> The input type, this is what parameters are provided to this generator
+ */
 @FunctionalInterface
 public interface Generator<T, S> {
 
+	/**
+	 * Generate the output value of type {@code T} with the random number generator {@code r} and the
+	 * input {@code params} of type {@code S}.
+	 * @param r The random number generator to use, this should be the only source of randomness in any implementation of this method.
+	 * @param params The input parameteres identifying all information available to the generator. This is the only information the generator has to base its output on.
+	 * @return A generated value, which may be constant, based on the {@code params} and deterministically, pseudo-randomly, seeded only by the provided randomiser {@code r}.
+	 */
 	public T generate(Random r, S params);
 	
+	/**
+	 * The generator type specifically used for generating the variable branching factor
+	 * at each node of a {@link VariantAGP} artificial game tree.
+	 */
 	@FunctionalInterface
 	public static interface Width {
+		/**
+		 * Generates a random branching factor for one node given the provided parameters.
+		 * <p>
+		 * If it is desired to produce fewer than the minimum allowed number of children, to terminate the tree at this node,
+		 * then it is advised to instead program this into the {@link Bounds} generator. The correct termination of nodes 
+		 * should occur when their lower and upper bounds are equal, and thus should not occur when this is not the case. The {@linkplain Width}
+		 * generator is only ever called on nodes which are not already terminal nodes, so they should have at least 1 child.
+		 * @param r The random number generator to use, this should be the only source of randomness in any implementation of this method.
+		 * @param min_allowed The minimum allowed output, this is the minimum branching factor, typically 1. The output should not be below this value.
+		 * @param max_allowed The maximum allowed output, this is the maximum branching factor. The output should not be above this value, or risk unpredictable seed overlapping behaviour.
+		 * @param current_depth The depth of the current node, for which this generator returns the number of children to generate.
+		 * @return The number of children to generate for this node.
+		 */
 		public int generate(Random r, int min_allowed, int max_allowed, long current_depth);
 		
+		/**
+		 * A default generator which always returns the maximum branching factor.
+		 */
 		public static Generator.Width FIXED = (r,min,max,d) -> max;
 	}
 	
+	/**
+	 * The generator type specifically used for generating the bounds of the children
+	 * generated as the children of each node of a {@link VariantAGP} artificial game tree.
+	 * <p>
+	 * The output value is an array of {@code long} integers. However, there are no restrictions on the length of this 
+	 * array, besides the minimum of size {@code 1}. The lower and upper bound of the resulting child node are computed
+	 * by taking the minimum and maximum of the values in the output array respectively.
+	 * <p>
+	 * By returning an array of size {@code 1}, the resulting child is a terminal node with the only provided value in
+	 * the array as its point value.
+	 */
 	@FunctionalInterface
 	public static interface Bounds extends Generator<long[], NodeInfo> {}
 	
