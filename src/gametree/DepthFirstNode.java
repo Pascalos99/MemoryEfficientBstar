@@ -30,6 +30,16 @@ public class DepthFirstNode<P extends IGamePosition<P>> extends GameTreeNode<Dep
 	private long depthLower, depthUpper;
 	private boolean evaluated;
 	
+	/**
+	 * Get a new depth-first game tree based on the provided game position and the {@code saveRootChildren} parameter.
+	 * The provided {@link MetricKeeper} objects are attached to the root of the tree and propagated to all children to record
+	 * the total metrics of the search algorithm(s) utilising this tree.
+	 * @param <P> The type of game position to store in this game tree
+	 * @param root The root position of the game tree, this is the current position of the game that all future positions descend from.
+	 * @param saveRootChildren
+	 * @param metrics
+	 * @return
+	 */
 	public static <P extends IGamePosition<P>> DepthFirstNode<P> getTree(P root, boolean saveRootChildren, MetricKeeper... metrics) {
 		if (saveRootChildren)
 			return new RootDFNode<P>(root, metrics);
@@ -59,6 +69,9 @@ public class DepthFirstNode<P extends IGamePosition<P>> extends GameTreeNode<Dep
 		return position().next().stream().map(p -> new DepthFirstNode<P>(this, p, metrics)).toList();
 	}
 
+	/**
+	 * Always returns an {@link Optional#empty()} object, because this class never saves children nodes.
+	 */
 	@Override
 	public Optional<List<DepthFirstNode<P>>> savedChildren() {
 		return Optional.empty();
@@ -140,7 +153,7 @@ public class DepthFirstNode<P extends IGamePosition<P>> extends GameTreeNode<Dep
 	 * the rest is discarded during search.
 	 * @param <P> The type of IGamePosition
 	 */
-	private static class RootDFNode<P extends IGamePosition<P>> extends DepthFirstNode<P> {
+	static class RootDFNode<P extends IGamePosition<P>> extends DepthFirstNode<P> {
 		
 		/**
 		 * Change whenever major changes to class structure are made.
@@ -148,7 +161,11 @@ public class DepthFirstNode<P extends IGamePosition<P>> extends GameTreeNode<Dep
 		 */
 		private static final long serialVersionUID = 1L;
 		
-		private ArrayList<DepthFirstNode<P>> children;
+		/**
+		 * The children stored in this root node. Children are of the {@link DepthFirstNode} type only,
+		 * and therefore do not store their own children in memory.
+		 */
+		ArrayList<DepthFirstNode<P>> children;
 		private boolean expanded;
 		
 		public RootDFNode(P position, MetricKeeper... metrics) {
@@ -157,6 +174,11 @@ public class DepthFirstNode<P extends IGamePosition<P>> extends GameTreeNode<Dep
 			expanded = false;
 		}
 		
+		/**
+		 * This implementation stores the children of the root node only, 
+		 * only the root node will be of the type {@link RootDFNode}, whereas all children will be
+		 * of the type {@link DepthFirstNode} which does not store children in memory.
+		 */
 		@Override
 		public List<DepthFirstNode<P>> _children(MetricKeeper... metrics) {
 			if (!expanded || children == null) {
@@ -172,6 +194,10 @@ public class DepthFirstNode<P extends IGamePosition<P>> extends GameTreeNode<Dep
 			return children == null? new ArrayList<>() : children;
 		}
 		
+		/**
+		 * Returns the children from {@link #_children(MetricKeeper...)} if they are present,
+		 * and an {@link Optional#empty()} otherwise.
+		 */
 		@Override
 		public Optional<List<DepthFirstNode<P>>> savedChildren() {
 			if (children == null) return Optional.empty();

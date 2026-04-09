@@ -55,7 +55,7 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 		 */
 		public final boolean adversarial;
 		/**
-		 * The pseudo-random number generator seed of the first node in the tree. Dictates the 
+		 * The pseudo-random number generator seed of the first node in the tree (<b>S₀</b>). Dictates the 
 		 * unique generation of the entire tree. A tree with the same settings, including the 
 		 * same initial seed, will always have the same structure no matter the order of 
 		 * expansion/exploration.
@@ -67,7 +67,7 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 		 */
 		public final int width;
 		/**
-		 * Initial range at the root node of this tree. The root node will start with lower- and upper-bounds 
+		 * Initial range <b>R</b> at the root node of this tree. The root node will start with lower- and upper-bounds 
 		 * {@code 0} and {@code initial_range}. Has to be greater than {@code 0} for the tree to be non-trivial.
 		 */
 		public final long initial_range;
@@ -89,8 +89,8 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 		 */
 		public final double growth_factor;
 		/**
-		 * Parameter <b>f</b>, relevance chance, only relevant when the growth factor {@code g} 
-		 * is greater than 1. Enforces that, for a fraction {@code f} of child nodes of each parent, 
+		 * Parameter <b>r</b>, relevance chance, only relevant when the growth factor {@code g} 
+		 * is greater than 1. Enforces that, for a fraction {@code r} of child nodes of each parent, 
 		 * the child bound overlaps with the parent bound. Such that either the upper or 
 		 * lower bound is forced to be generated within the parent bound, depending on whether 
 		 * the node is minimising or maximising respectively.
@@ -107,6 +107,7 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 		public final boolean memory_saver;
 		
 		/**
+		 * Initialises the artificial game tree settings with the provided parameter values.
 		 * @param adversarial				{@link #adversarial}, denotes whether this tree is an adversarial tree or not
 		 * @param initial_seed 				{@link #initial_seed}, denotes a unique tree generation sequence
 		 * @param width 					{@link #width}, has to be greater than or equal to 2
@@ -138,10 +139,26 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 			this.force_relevance_chance = force_relevance_chance;
 			this.memory_saver 			= memory_saver;
 		}
+		/**
+		 * Initialises the artificial game tree settings with the provided parameter values.
+		 * <p>
+		 * This constructor uses a default value of {@code true} for the {@link #memory_saver} parameter.
+		 * @param adversarial
+		 * @param initial_seed
+		 * @param width
+		 * @param initial_range
+		 * @param num_alts
+		 * @param growth_factor
+		 * @param force_relevance_chance
+		 */
 		public Settings(boolean adversarial, long initial_seed, int width, long initial_range, int num_alts, double growth_factor, double force_relevance_chance) {
 			this(adversarial, initial_seed, width, initial_range, num_alts, growth_factor, force_relevance_chance, true);
 		}
 		
+		/**
+		 * Creates a new {@link ArtificialGamePosition} object representing a unique tree defined by the parameters set in this {@link Settings} object.
+		 * @return A new artificial game tree based on the parameters of this object.
+		 */
 		public ArtificialGamePosition getTree() {
 			return new ArtificialGamePosition(this);
 		}
@@ -464,12 +481,22 @@ public class ArtificialGamePosition implements IGamePosition<ArtificialGamePosit
 		return delta;
 	}
 	
+	/**
+	 * Finds the minimum value of an array
+	 * @param values the array of values to search
+	 * @return the minimum value of the provided {@code values} array.
+	 */
 	public static long minV(long[] values) {
 		long minv = values[0];
 		for (int i=1; i < values.length; i++) minv = Long.min(values[i], minv);
 		return minv;
 	}
 	
+	/**
+	 * Finds the maximum value of an array
+	 * @param values the array of values to search
+	 * @return the maximum value of the provided {@code values} array.
+	 */
 	public static long maxV(long[] values) {
 		long maxv = values[0];
 		for (int i=1; i < values.length; i++) maxv = Long.max(values[i], maxv);

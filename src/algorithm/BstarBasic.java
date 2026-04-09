@@ -52,9 +52,19 @@ public class BstarBasic implements SearchWithTree {
 	private boolean filterTerminalNodes;
 	private double randomChance;
 	
+	/**
+	 * Sets the maximum number of rootless back-propagations made by the search until a
+	 * back-propagation to the root is forced. Defaults to {@code 1000}.<p>
+	 * This can be disabled by calling {@link #disableMaxRootlessUpdates()}
+	 * @param maxRootless The maximum number of rootless updates / back-propagations.
+	 */
 	public void setMaxRootlessUpdates(long maxRootless) {
 		max_rootless_updates = maxRootless;
 	}
+	/**
+	 * Disable the limit on the number of rootless back-propagations made by the search.
+	 * This can be enabled again by calling {@link #setMaxRootlessUpdates(long)}.
+	 */
 	public void disableMaxRootlessUpdates() {
 		max_rootless_updates = Long.MAX_VALUE;
 	}
@@ -71,8 +81,10 @@ public class BstarBasic implements SearchWithTree {
 	private volatile long rootless_updates;
 	
 	/**
-	 * defaults to {@code false}
-	 * @param set
+	 * Correlates to the {@link SearchTreeNode#enableIncorrectBoundsProtection(boolean)} setting.
+	 * If incorrect bounds are expected, setting this to {@code true} will keep discarded nodes in memory so they
+	 * can be re-expanded again later. This defaults to {@code false}
+	 * @param set the value to set to
 	 */
 	public void expectIncorrectBounds(boolean set) {
 		expectIncorrectBounds = set;
@@ -155,7 +167,7 @@ public class BstarBasic implements SearchWithTree {
 			strategy[0] = strategyFunction.useProveBest(node, metrics);
 	}
 	
-	public static Random randomizer = new Random();
+	private static Random randomizer = new Random();
 	
 	private <N extends GameTreeNode<N, P>, P extends IGamePosition<P>> N filterTerminal(N next, MetricKeeper... metrics) {
 		return filterTerminalNodes? (isTerminal(next, metrics) ? null : next) : next;
