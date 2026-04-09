@@ -289,7 +289,13 @@ public interface SearchAlgorithm {
 	 * The limits imposed on the search. This is used by B*-squared and by all algorithm variants 
 	 *  for the implementation of the core experiments and its computational and spatial limits.
 	 *  
-	 *  @param limitEvaluations whether to limit the number of evaluations of the run.
+	 *  @param limitEvaluations Whether to limit the number of evaluations of the run.
+	 *  @param maxEvaluations The maximum number of evaluations made during the run. After exceeding this amount, the search is terminated early.
+	 *  @param limitExpansions Whether to limit the number of expansions of the run.
+	 *  @param maxExpansions The maximum number of expansions made during the run. After exceeding this amount, the search is terminated early.
+	 *  @param limitMaxNodes Whether to limit the number of nodes stored in memory during the run.
+	 *  @param maxNodes The maximum number of nodes stored in memory during the run. This is akin to the available memory of the search. Although 
+	 *  the number of nodes stored does not directly correspond 1-to-1 with memory usage, it is the main memory usage of most best-first algorithms.
 	 */
 	public static record Limits(boolean limitEvaluations, long maxEvaluations, boolean limitExpansions, long maxExpansions, boolean limitMaxNodes, long maxNodes) {
 		
