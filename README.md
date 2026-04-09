@@ -6,3 +6,5 @@ The thesis was supervised by Prof. Dr. Mark H.M. Winands and Dr. Dennis J.N.J. S
 
 Three branches are available for this repository.
 All experiments and their results, as described in the thesis, were performed using the code on the "main" branch. The "java17" branch contains the source code of this project modified to run on Java 17, as the default code base assumes Java 24 is used. The "extra" branch contains additional code for a new B*² class "BstarSquaredKeep", which implements all four bounds preservation techniques described in the thesis. Additionally, the "extra" branch implements the shallow and deep irrelevance stop-conditions, as described in the thesis.
+
+Visit https://pascalos99.github.io/MemoryEfficientBstar/ for the documentation of this codebase.
